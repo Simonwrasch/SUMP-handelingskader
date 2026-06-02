@@ -365,48 +365,7 @@
         oninput="onCityInput()" onkeydown="if(event.key==='Enter')confirmCity()">
       <button class="city-confirm" onclick="confirmCity()" data-i18n="city_confirm_btn">Bevestigen</button>
     </div>
-    <div class="map-container" id="map-container">
-      <!-- EU Map SVG — simplified equirectangular projection, viewBox 0 0 520 390 -->
-      <svg id="eu-map" viewBox="0 0 520 390" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="mapGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e8f4fd"/>
-            <stop offset="100%" stop-color="#d0e8f8"/>
-          </linearGradient>
-        </defs>
-        <rect width="520" height="390" fill="#ddeeff" rx="10"/>
-        <!-- Europe landmass (simplified) -->
-        <path d="
-          M 55,355 L 55,310 L 72,300 L 80,290 L 85,275 L 78,265 L 90,255 L 100,242
-          L 95,232 L 115,215 L 132,208 L 118,198 L 125,188 L 148,182 L 162,170
-          L 168,155 L 160,145 L 175,135 L 188,120 L 195,108 L 182,98 L 180,85
-          L 188,72 L 202,58 L 220,48 L 245,40 L 268,36 L 285,38 L 295,28 L 310,25
-          L 328,30 L 345,38 L 355,52 L 370,48 L 385,55 L 400,65 L 410,80
-          L 420,95 L 415,110 L 425,125 L 435,140 L 428,158 L 440,170
-          L 450,185 L 455,200 L 448,215 L 460,230 L 465,248 L 455,262
-          L 462,278 L 458,295 L 445,308 L 430,318 L 418,330 L 405,345
-          L 388,355 L 370,360 L 345,355 L 325,365 L 305,372 L 285,368
-          L 268,355 L 248,360 L 230,370 L 210,375 L 188,368 L 168,360
-          L 148,368 L 128,375 L 108,368 L 88,362 L 70,358 Z
-        " fill="url(#mapGrad)" stroke="#aac8e0" stroke-width="1.2"/>
-
-        <!-- Scandinavia + UK extras -->
-        <path d="M 220,48 L 205,32 L 195,18 L 200,8 L 215,5 L 228,12 L 235,25 L 228,38 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-        <path d="M 245,40 L 255,30 L 262,18 L 270,10 L 280,8 L 292,16 L 295,28 L 285,38 L 268,36 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-        <path d="M 130,165 L 122,148 L 115,132 L 118,118 L 130,112 L 142,118 L 148,132 L 145,148 L 138,162 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-
-        <!-- User city marker (hidden by default) -->
-        <g id="marker-user" style="display:none">
-          <circle id="user-dot" cx="0" cy="0" r="8" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/>
-          <text id="user-label" x="0" y="0" font-size="12" fill="var(--accent)" font-weight="700" font-family="sans-serif"></text>
-        </g>
-      </svg>
-    </div>
-  </div>
-
+ 
   <div class="info-card">
     <h2 data-i18n="about_title">Over dit kader</h2>
     <p data-i18n="about_p1">Dit handelingskader is ontwikkeld als eindproduct van een afstudeeronderzoek naar de implementatie van Sustainable Urban Mobility Plans (SUMPs) in Europese stedelijke knooppunten. Het kader is gebaseerd op vergelijkend casusonderzoek naar vier Europese steden — Napels, Brașov, Parijs en Kopenhagen — die zich elk in een andere fase van de mobiliteitstransitie bevinden.</p>
