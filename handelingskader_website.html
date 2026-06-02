@@ -4,139 +4,309 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contextgevoelig Handelingskader SUMP</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7f5; color: #1a1a1a; font-size: 16px; line-height: 1.6; }
 
-  /* NAV */
-  nav { background: #fff; border-bottom: 1px solid #d4e6d4; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; height: 60px; }
-  .nav-logo { font-weight: 600; color: #2d6a2d; font-size: 15px; flex-shrink: 0; }
+  /* ── Phase-adaptive CSS vars ── */
+  :root {
+    --accent: #2d6a2d; --accent-dark: #245724; --accent-light: #4a9a4a;
+    --accent-bg: #f0f7f0; --accent-border: #d4e6d4; --accent-pale: #e8f5e8;
+    --phase-badge-bg: #f0f7f0; --phase-badge-color: #2d6a2d;
+  }
+  body.phase-pre {
+    --accent: #c62828; --accent-dark: #b71c1c; --accent-light: #e57373;
+    --accent-bg: #fff5f5; --accent-border: #ffcdd2; --accent-pale: #ffebee;
+    --phase-badge-bg: #ffebee; --phase-badge-color: #c62828;
+  }
+  body.phase-takeoff {
+    --accent: #e65100; --accent-dark: #bf360c; --accent-light: #ff8a50;
+    --accent-bg: #fff8f0; --accent-border: #ffe0b2; --accent-pale: #fff3e0;
+    --phase-badge-bg: #fff3e0; --phase-badge-color: #e65100;
+  }
+  body.phase-acc {
+    --accent: #2d6a2d; --accent-dark: #245724; --accent-light: #4a9a4a;
+    --accent-bg: #f0f7f0; --accent-border: #d4e6d4; --accent-pale: #e8f5e8;
+    --phase-badge-bg: #f0f7f0; --phase-badge-color: #2d6a2d;
+  }
+  body.phase-stab {
+    --accent: #1b5e20; --accent-dark: #145214; --accent-light: #388e3c;
+    --accent-bg: #e8f5e9; --accent-border: #c8e6c9; --accent-pale: #f1f8e9;
+    --phase-badge-bg: #e8f5e9; --phase-badge-color: #1b5e20;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f7f5; color: #1a1a1a; font-size: 16px; line-height: 1.6;
+    transition: background .4s;
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: #fff; border-bottom: 2px solid var(--accent-border);
+    padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; height: 60px;
+    transition: border-color .4s;
+  }
+  .nav-logo { font-weight: 700; color: var(--accent); font-size: 15px; flex-shrink: 0; letter-spacing: -.01em; }
   .nav-steps { display: flex; gap: 0; }
-  .nav-step { padding: 0 20px; height: 60px; display: flex; align-items: center; font-size: 14px; color: #888; border-bottom: 3px solid transparent; cursor: pointer; transition: all .2s; }
-  .nav-step.active { color: #2d6a2d; border-bottom-color: #2d6a2d; font-weight: 500; }
-  .nav-step.done { color: #4a9a4a; }
-  .nav-actions { display: flex; gap: .5rem; flex-shrink: 0; }
-  .btn-lang { padding: 6px 14px; border-radius: 6px; border: 1.5px solid #d4e6d4; background: #fff; font-size: 13px; font-weight: 500; color: #2d6a2d; cursor: pointer; transition: all .2s; }
-  .btn-lang:hover { background: #f0f7f0; border-color: #4a9a4a; }
-  .btn-reset { padding: 6px 14px; border-radius: 6px; border: 1.5px solid #ffd5d5; background: #fff; font-size: 13px; font-weight: 500; color: #c62828; cursor: pointer; transition: all .2s; }
+  .nav-step {
+    padding: 0 20px; height: 60px; display: flex; align-items: center;
+    font-size: 14px; color: #999; border-bottom: 3px solid transparent;
+    cursor: pointer; transition: all .2s;
+  }
+  .nav-step.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .nav-step.done { color: var(--accent-light); }
+  .nav-actions { display: flex; gap: .5rem; flex-shrink: 0; align-items: center; }
+  .city-display {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--accent-bg); border: 1.5px solid var(--accent-border);
+    padding: 5px 12px; border-radius: 20px; display: none; max-width: 140px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .btn-lang {
+    padding: 6px 14px; border-radius: 6px; border: 1.5px solid var(--accent-border);
+    background: #fff; font-size: 13px; font-weight: 500; color: var(--accent);
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-lang:hover { background: var(--accent-bg); border-color: var(--accent-light); }
+  .btn-reset {
+    padding: 6px 14px; border-radius: 6px; border: 1.5px solid #ffd5d5;
+    background: #fff; font-size: 13px; font-weight: 500; color: #c62828;
+    cursor: pointer; transition: all .2s;
+  }
   .btn-reset:hover { background: #fff0f0; border-color: #e57373; }
 
-  /* SECTIONS */
+  /* ── SECTIONS ── */
   section { display: none; max-width: 1060px; margin: 0 auto; padding: 3rem 1.5rem; }
   section.visible { display: block; }
 
-  /* INTRO */
-  .intro-hero { background: linear-gradient(135deg, #2d6a2d 0%, #4a9a4a 100%); color: #fff; border-radius: 12px; padding: 2.5rem; margin-bottom: 2rem; }
-  .intro-hero h1 { font-size: 24px; font-weight: 600; margin-bottom: .75rem; line-height: 1.3; }
-  .intro-hero p { opacity: .9; font-size: 15px; }
+  /* ── INTRO ── */
+  .intro-hero {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: #fff; border-radius: 14px; padding: 2.5rem; margin-bottom: 2rem;
+    position: relative; overflow: hidden; transition: background .4s;
+  }
+  .intro-hero::before {
+    content: ''; position: absolute; right: -30px; top: -30px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,.06); pointer-events: none;
+  }
+  .intro-hero h1 { font-size: 24px; font-weight: 700; margin-bottom: .75rem; line-height: 1.3; }
+  .intro-hero p { opacity: .9; font-size: 15px; max-width: 600px; }
   .intro-meta { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
   .intro-tag { background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 14px; font-size: 13px; }
 
-  .info-card { background: #fff; border: 1px solid #d4e6d4; border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; }
-  .info-card h2 { font-size: 16px; font-weight: 600; color: #2d6a2d; margin-bottom: .75rem; }
+  /* ── City input + map ── */
+  .city-input-wrap {
+    background: #fff; border: 2px solid var(--accent-border); border-radius: 12px;
+    padding: 1.5rem; margin-bottom: 1.5rem; transition: border-color .4s;
+  }
+  .city-input-wrap h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: .75rem; }
+  .city-row { display: flex; gap: .75rem; align-items: center; }
+  .city-input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 15px; transition: border-color .2s; outline: none;
+  }
+  .city-input:focus { border-color: var(--accent); }
+  .city-confirm {
+    padding: 10px 20px; background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background .2s; white-space: nowrap;
+  }
+  .city-confirm:hover { background: var(--accent-dark); }
+
+  .map-container { margin-top: 1.25rem; }
+  .map-container svg { display: block; width: 100%; max-width: 520px; height: auto; border-radius: 10px; }
+
+  .info-card {
+    background: #fff; border: 1px solid var(--accent-border); border-radius: 10px;
+    padding: 1.5rem; margin-bottom: 1rem; transition: border-color .4s;
+  }
+  .info-card h2 { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: .75rem; }
   .info-card p { font-size: 15px; color: #444; margin-bottom: .5rem; }
   .info-card p:last-child { margin-bottom: 0; }
 
   .steps-overview { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
-  .step-card { background: #fff; border: 1px solid #d4e6d4; border-radius: 10px; padding: 1.25rem; text-align: center; }
-  .step-num { width: 36px; height: 36px; border-radius: 50%; background: #2d6a2d; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; margin: 0 auto .75rem; }
-  .step-card h3 { font-size: 14px; font-weight: 600; color: #2d6a2d; margin-bottom: .4rem; }
+  .step-card {
+    background: #fff; border: 1px solid var(--accent-border); border-radius: 10px;
+    padding: 1.25rem; text-align: center; transition: border-color .4s;
+  }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; margin: 0 auto .75rem;
+    transition: background .4s;
+  }
+  .step-card h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: .4rem; }
   .step-card p { font-size: 13px; color: #666; }
 
-  .note-box { background: #f0f7f0; border-left: 3px solid #4a9a4a; border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin: 1.5rem 0; font-size: 14px; color: #444; }
+  .note-box {
+    background: var(--accent-bg); border-left: 3px solid var(--accent-light);
+    border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin: 1.5rem 0;
+    font-size: 14px; color: #444; transition: background .4s;
+  }
 
-  /* BUTTONS */
+  /* ── BUTTONS ── */
   .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; border: none; transition: all .2s; }
-  .btn-primary { background: #2d6a2d; color: #fff; }
-  .btn-primary:hover { background: #245724; }
-  .btn-secondary { background: #fff; color: #2d6a2d; border: 1px solid #2d6a2d; }
-  .btn-secondary:hover { background: #f0f7f0; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-secondary { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); }
+  .btn-secondary:hover { background: var(--accent-bg); }
   .btn-sm { padding: 8px 18px; font-size: 14px; }
+  .btn-pdf {
+    background: #1a1a1a; color: #fff; display: inline-flex; align-items: center; gap: .5rem;
+  }
+  .btn-pdf:hover { background: #333; }
 
-  /* STEP 1 — question grid layout */
+  /* ── STEP 1 ── */
   .dim-section { margin-bottom: 2rem; }
-  .dim-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #2d6a2d; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid #d4e6d4; }
+  .dim-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--accent); margin-bottom: 1rem; padding-bottom: .5rem;
+    border-bottom: 2px solid var(--accent-border); transition: color .4s, border-color .4s;
+  }
 
   .question {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 1.25rem;
-    margin-bottom: .75rem;
-    transition: border-color .2s;
-    display: grid;
-    grid-template-columns: 1fr 290px;
-    grid-template-rows: auto auto;
-    column-gap: 2rem;
-    align-items: start;
+    background: #fff; border: 1px solid #e8e8e8; border-radius: 10px;
+    padding: 1.25rem; margin-bottom: .75rem; transition: border-color .25s, box-shadow .25s;
+    display: grid; grid-template-columns: 1fr 290px; grid-template-rows: auto auto;
+    column-gap: 2rem; align-items: start;
   }
-  .question.answered { border-color: #4a9a4a; }
-  .q-text { grid-column: 1; grid-row: 1; font-size: 15px; color: #1a1a1a; }
-  .q-reason { grid-column: 1; grid-row: 2; margin-top: .3rem; font-size: 13px; color: #888; font-style: italic; }
-  .q-options {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    display: flex;
-    flex-direction: column;
-    gap: .4rem;
-    align-self: center;
+  .question:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .question.answered { border-color: var(--accent-light); }
+  .q-text { grid-column: 1; grid-row: 1; font-size: 15px; color: #1a1a1a; font-weight: 500; }
+  .q-reason { grid-column: 1; grid-row: 2; margin-top: .4rem; font-size: 13px; color: #999; font-style: italic; }
+  .q-options { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: .4rem; align-self: center; }
+  .q-btn {
+    width: 100%; padding: 9px 0; border-radius: 7px; border: 1.5px solid #e0e0e0;
+    background: #fafafa; font-size: 14px; font-weight: 500; color: #666;
+    cursor: pointer; transition: all .2s; text-align: center;
   }
-  .q-btn { width: 100%; padding: 9px 0; border-radius: 7px; border: 1.5px solid #ddd; background: #fafafa; font-size: 14px; font-weight: 500; color: #555; cursor: pointer; transition: all .2s; text-align: center; }
-  .q-btn:hover { border-color: #4a9a4a; color: #2d6a2d; }
+  .q-btn:hover { border-color: var(--accent-light); color: var(--accent); background: var(--accent-bg); }
   .q-btn.sel-nee { background: #fff0f0; border-color: #e57373; color: #c62828; }
   .q-btn.sel-deels { background: #fff8e1; border-color: #ffa726; color: #e65100; }
-  .q-btn.sel-ja { background: #f0f7f0; border-color: #4a9a4a; color: #2d6a2d; }
+  .q-btn.sel-ja { background: var(--accent-bg); border-color: var(--accent-light); color: var(--accent); }
 
-  .score-bar { background: #fff; border: 1px solid #d4e6d4; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-  .score-total { font-size: 28px; font-weight: 700; color: #2d6a2d; }
-  .score-label { font-size: 13px; color: #888; }
-  .score-max { font-size: 14px; color: #aaa; }
+  .score-bar {
+    background: #fff; border: 1px solid var(--accent-border); border-radius: 10px;
+    padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center;
+    gap: 2rem; flex-wrap: wrap; transition: border-color .4s;
+  }
+  .score-total { font-size: 28px; font-weight: 700; color: var(--accent); transition: color .4s; }
+  .score-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #aaa; margin-bottom: 2px; }
+  .score-max { font-size: 14px; color: #bbb; }
 
-  /* RESULTS */
-  .result-phase { border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; }
-  .result-phase.pre { background: #fff0f0; border: 1px solid #ef9a9a; }
-  .result-phase.takeoff { background: #fff8e1; border: 1px solid #ffa726; }
-  .result-phase.acc { background: #f0f7f0; border: 1px solid #4a9a4a; }
-  .result-phase.stab { background: #e8f4fd; border: 1px solid #42a5f5; }
-  .phase-title { font-size: 20px; font-weight: 700; margin-bottom: .25rem; }
+  /* ── RESULTS ── */
+  .result-phase { border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .result-phase.pre { background: #fff0f0; border: 1.5px solid #ef9a9a; }
+  .result-phase.takeoff { background: #fff8e1; border: 1.5px solid #ffa726; }
+  .result-phase.acc { background: #f0f7f0; border: 1.5px solid #4a9a4a; }
+  .result-phase.stab { background: #e8f5e9; border: 1.5px solid #66bb6a; }
+  .phase-title { font-size: 21px; font-weight: 700; margin-bottom: .25rem; }
   .phase-sub { font-size: 14px; opacity: .8; }
 
   .dim-results { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.5rem; }
-  .dim-result { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; }
-  .dim-result-name { font-size: 13px; color: #666; margin-bottom: .25rem; }
-  .dim-result-score { font-size: 18px; font-weight: 700; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin-top: .25rem; }
+  .dim-result {
+    background: #fff; border: 1px solid #e8e8e8; border-radius: 9px; padding: 1rem;
+    transition: border-color .2s;
+  }
+  .dim-result-name { font-size: 13px; color: #777; margin-bottom: .25rem; }
+  .dim-result-score { font-size: 20px; font-weight: 700; }
+  .badge { display: inline-block; padding: 3px 11px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-top: .25rem; }
   .badge-zwak { background: #ffebee; color: #c62828; }
-  .badge-matig { background: #fff8e1; color: #e65100; }
-  .badge-sterk { background: #f0f7f0; color: #2d6a2d; }
+  .badge-matig { background: #fff3e0; color: #e65100; }
+  .badge-sterk { background: var(--accent-bg); color: var(--accent); }
 
-  /* STEP 2 */
-  .s2-question { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 1.25rem; margin-bottom: .75rem; }
+  /* ── Radar chart ── */
+  .radar-wrap {
+    background: #fff; border: 1px solid var(--accent-border); border-radius: 12px;
+    padding: 1.5rem; margin-bottom: 1.5rem; text-align: center;
+    transition: border-color .4s;
+  }
+  .radar-wrap h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 1rem; }
+  #radarCanvas { max-width: 340px; display: block; margin: 0 auto; }
+
+  /* ── STEP 2 ── */
+  .s2-question { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 1.25rem; margin-bottom: .75rem; }
   .s2-q-text { font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
   .s2-options { display: flex; flex-direction: column; gap: .5rem; }
-  .s2-btn { padding: 10px 14px; border-radius: 7px; border: 1.5px solid #ddd; background: #fafafa; font-size: 14px; color: #555; cursor: pointer; transition: all .2s; text-align: left; }
-  .s2-btn:hover { border-color: #4a9a4a; }
-  .s2-btn.sel { background: #f0f7f0; border-color: #4a9a4a; color: #2d6a2d; font-weight: 500; }
-  .s2-opt-num { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #e0e0e0; color: #555; font-size: 12px; font-weight: 600; text-align: center; line-height: 22px; margin-right: 8px; }
-  .s2-btn.sel .s2-opt-num { background: #2d6a2d; color: #fff; }
+  .s2-btn {
+    padding: 10px 14px; border-radius: 7px; border: 1.5px solid #e0e0e0;
+    background: #fafafa; font-size: 14px; color: #555; cursor: pointer;
+    transition: all .2s; text-align: left;
+  }
+  .s2-btn:hover { border-color: var(--accent-light); }
+  .s2-btn.sel { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .s2-opt-num {
+    display: inline-block; width: 22px; height: 22px; border-radius: 50%;
+    background: #e8e8e8; color: #666; font-size: 12px; font-weight: 700;
+    text-align: center; line-height: 22px; margin-right: 8px;
+  }
+  .s2-btn.sel .s2-opt-num { background: var(--accent); color: #fff; }
 
-  /* STEP 3 */
-  .advice-phase { margin-bottom: 2rem; }
-  .advice-phase-header { background: #2d6a2d; color: #fff; border-radius: 10px 10px 0 0; padding: 1rem 1.5rem; }
-  .advice-phase-header h2 { font-size: 17px; font-weight: 600; }
-  .advice-block { background: #fff; border: 1px solid #d4e6d4; border-top: none; padding: 1.5rem; }
-  .advice-block:last-child { border-radius: 0 0 10px 10px; }
-  .advice-dim { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #2d6a2d; margin-bottom: .75rem; }
-  .advice-text { font-size: 15px; color: #333; margin-bottom: 1rem; line-height: 1.7; }
-  .advice-example { background: #f0f7f0; border-left: 3px solid #4a9a4a; padding: .75rem 1rem; border-radius: 0 6px 6px 0; font-size: 14px; color: #444; font-style: italic; }
-  .advice-sep { border: none; border-top: 1px solid #e8f5e9; margin: 1.25rem 0; }
+  /* ── STEP 3 ── */
+  .s3-phase-header {
+    background: var(--accent); color: #fff; border-radius: 12px;
+    padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; transition: background .4s;
+  }
+  .s3-phase-header h2 { font-size: 18px; font-weight: 700; margin-bottom: .2rem; }
+  .s3-phase-header p { font-size: 13px; opacity: .85; }
 
-  .no-advice { background: #fff; border: 1px solid #d4e6d4; border-radius: 10px; padding: 2rem; text-align: center; color: #666; }
+  /* Tab nav */
+  .advice-tabs { display: flex; gap: .5rem; margin-bottom: 0; flex-wrap: wrap; }
+  .advice-tab {
+    padding: 9px 18px; border-radius: 8px 8px 0 0; border: 1.5px solid #e0e0e0;
+    border-bottom: none; background: #f5f5f5; font-size: 13px; font-weight: 600;
+    color: #888; cursor: pointer; transition: all .2s; white-space: nowrap;
+    position: relative; top: 1px;
+  }
+  .advice-tab.active {
+    background: #fff; color: var(--accent); border-color: var(--accent-border);
+    border-bottom-color: #fff;
+  }
+  .advice-tab .tab-badge {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+  }
+  .tab-badge.zwak { background: #c62828; }
+  .tab-badge.matig { background: #e65100; }
+  .tab-badge.sterk { background: #4a9a4a; }
 
-  h2.section-title { font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: .5rem; }
+  /* Tab panels */
+  .advice-panels {
+    background: #fff; border: 1.5px solid var(--accent-border);
+    border-radius: 0 10px 10px 10px; padding: 1.75rem;
+    transition: border-color .4s;
+  }
+  .advice-panel { display: none; }
+  .advice-panel.active { display: block; }
+  .advice-dim {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--accent); margin-bottom: .5rem;
+  }
+  .advice-panel-score {
+    display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1.25rem;
+  }
+  .advice-panel-score .score-num { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+  .advice-panel-score .score-den { font-size: 13px; color: #aaa; }
+  .advice-text { font-size: 15px; color: #333; margin-bottom: 1rem; line-height: 1.75; }
+  .advice-example {
+    background: var(--accent-bg); border-left: 3px solid var(--accent-light);
+    padding: .85rem 1.1rem; border-radius: 0 8px 8px 0;
+    font-size: 14px; color: #555; font-style: italic; transition: background .4s;
+  }
+  .advice-example::before { content: '↳ '; font-style: normal; opacity: .5; }
+
+  .no-advice { background: #fff; border: 1px solid var(--accent-border); border-radius: 10px; padding: 2rem; text-align: center; color: #666; }
+
+  h2.section-title { font-size: 21px; font-weight: 700; color: #1a1a1a; margin-bottom: .5rem; }
   p.section-sub { font-size: 15px; color: #666; margin-bottom: 2rem; }
 
-  .action-row { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+  .action-row { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; align-items: center; }
+
+  /* ── Separator ── */
+  .advice-sep { border: none; border-top: 1px solid var(--accent-pale); margin: 1.25rem 0; }
 
   @media(max-width:800px) {
     .question { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
@@ -144,6 +314,7 @@
     .q-reason { grid-column: 1; grid-row: 2; }
     .q-options { grid-column: 1; grid-row: 3; flex-direction: row; margin-top: .75rem; }
     .q-btn { flex: 1; }
+    .city-row { flex-direction: column; align-items: stretch; }
   }
   @media(max-width:600px) {
     .steps-overview { grid-template-columns: 1fr; }
@@ -151,6 +322,7 @@
     .nav-steps { gap: 0; }
     .nav-step { padding: 0 10px; font-size: 12px; }
     .btn-lang, .btn-reset { font-size: 12px; padding: 5px 10px; }
+    .city-display { display: none !important; }
   }
 </style>
 </head>
@@ -165,12 +337,13 @@
     <div class="nav-step" id="nav-3" onclick="goSection(3)" data-i18n="nav_s3">Stap 3</div>
   </div>
   <div class="nav-actions">
+    <div class="city-display" id="city-nav-display"></div>
     <button class="btn-reset" onclick="resetAll()" data-i18n="btn_reset">↺ Opnieuw</button>
     <button class="btn-lang" onclick="toggleLang()" id="lang-btn">EN</button>
   </div>
 </nav>
 
-<!-- INLEIDING -->
+<!-- ── INLEIDING ── -->
 <section id="s0" class="visible">
   <div class="intro-hero">
     <h1 data-i18n="hero_title">Contextgevoelig Handelingskader voor SUMP-implementatie</h1>
@@ -179,6 +352,58 @@
       <span class="intro-tag" data-i18n="tag1">4 dimensies</span>
       <span class="intro-tag" data-i18n="tag2">3 stappen</span>
       <span class="intro-tag" data-i18n="tag3">Gebaseerd op casusonderzoek</span>
+    </div>
+  </div>
+
+  <!-- City input + EU map -->
+  <div class="city-input-wrap">
+    <h3 data-i18n="city_input_title">Voor welke stad gebruikt u dit kader?</h3>
+    <div class="city-row">
+      <input class="city-input" id="city-input-field" type="text"
+        data-i18n-placeholder="city_placeholder"
+        placeholder="Naam van de stad (optioneel)"
+        oninput="onCityInput()" onkeydown="if(event.key==='Enter')confirmCity()">
+      <button class="city-confirm" onclick="confirmCity()" data-i18n="city_confirm_btn">Bevestigen</button>
+    </div>
+    <div class="map-container" id="map-container">
+      <!-- EU Map SVG — simplified equirectangular projection, viewBox 0 0 520 390 -->
+      <svg id="eu-map" viewBox="0 0 520 390" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="mapGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e8f4fd"/>
+            <stop offset="100%" stop-color="#d0e8f8"/>
+          </linearGradient>
+        </defs>
+        <rect width="520" height="390" fill="#ddeeff" rx="10"/>
+        <!-- Europe landmass (simplified) -->
+        <path d="
+          M 55,355 L 55,310 L 72,300 L 80,290 L 85,275 L 78,265 L 90,255 L 100,242
+          L 95,232 L 115,215 L 132,208 L 118,198 L 125,188 L 148,182 L 162,170
+          L 168,155 L 160,145 L 175,135 L 188,120 L 195,108 L 182,98 L 180,85
+          L 188,72 L 202,58 L 220,48 L 245,40 L 268,36 L 285,38 L 295,28 L 310,25
+          L 328,30 L 345,38 L 355,52 L 370,48 L 385,55 L 400,65 L 410,80
+          L 420,95 L 415,110 L 425,125 L 435,140 L 428,158 L 440,170
+          L 450,185 L 455,200 L 448,215 L 460,230 L 465,248 L 455,262
+          L 462,278 L 458,295 L 445,308 L 430,318 L 418,330 L 405,345
+          L 388,355 L 370,360 L 345,355 L 325,365 L 305,372 L 285,368
+          L 268,355 L 248,360 L 230,370 L 210,375 L 188,368 L 168,360
+          L 148,368 L 128,375 L 108,368 L 88,362 L 70,358 Z
+        " fill="url(#mapGrad)" stroke="#aac8e0" stroke-width="1.2"/>
+
+        <!-- Scandinavia + UK extras -->
+        <path d="M 220,48 L 205,32 L 195,18 L 200,8 L 215,5 L 228,12 L 235,25 L 228,38 Z"
+              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
+        <path d="M 245,40 L 255,30 L 262,18 L 270,10 L 280,8 L 292,16 L 295,28 L 285,38 L 268,36 Z"
+              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
+        <path d="M 130,165 L 122,148 L 115,132 L 118,118 L 130,112 L 142,118 L 148,132 L 145,148 L 138,162 Z"
+              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
+
+        <!-- User city marker (hidden by default) -->
+        <g id="marker-user" style="display:none">
+          <circle id="user-dot" cx="0" cy="0" r="8" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/>
+          <text id="user-label" x="0" y="0" font-size="12" fill="var(--accent)" font-weight="700" font-family="sans-serif"></text>
+        </g>
+      </svg>
     </div>
   </div>
 
@@ -196,7 +421,7 @@
   <div class="info-card">
     <h2 data-i18n="how_title">Hoe werkt het?</h2>
     <p data-i18n="how_p1">Het kader is bewust contextgevoelig opgezet — er bestaat geen universeel recept voor succesvolle SUMP-implementatie. Het kader koppelt adviezen aan de transitiefase én de specifieke dimensies waarin een stad tekortschiet.</p>
-    <p style="margin-top:.75rem; font-size:14px; color:#666;" data-i18n="how_p2">Let op: als self-assessment instrument is het moeilijk om volledig onafhankelijk vast te stellen waar en waarom iets niet lukt. Gekozen is voor gesloten vragen zodat scores berekend en adviezen systematisch gekoppeld kunnen worden. Het kader geeft een gefundeerde richting, geen definitieve diagnose.</p>
+    <p style="margin-top:.75rem; font-size:14px; color:#777;" data-i18n="how_p2">Let op: als self-assessment instrument is het moeilijk om volledig onafhankelijk vast te stellen waar en waarom iets niet lukt. Gekozen is voor gesloten vragen zodat scores berekend en adviezen systematisch gekoppeld kunnen worden. Het kader geeft een gefundeerde richting, geen definitieve diagnose.</p>
   </div>
 
   <div class="steps-overview">
@@ -224,7 +449,7 @@
   <button class="btn btn-primary" onclick="goSection(1)" data-i18n="begin_btn">Begin met stap 1 →</button>
 </section>
 
-<!-- STAP 1 -->
+<!-- ── STAP 1 ── -->
 <section id="s1">
   <h2 class="section-title" data-i18n="s1_title">Stap 1 — Scorecard</h2>
   <p class="section-sub" data-i18n="s1_sub">Beantwoord alle 13 stellingen met <strong>Nee</strong>, <strong>Deels</strong> of <strong>Ja</strong>. Bij elke stelling staat een korte toelichting waarom deze relevant is.</p>
@@ -233,7 +458,7 @@
     <h2 data-i18n="scoring_title">Hoe werkt de scoring?</h2>
     <p data-i18n="scoring_p1">Nee = 1 punt &nbsp;|&nbsp; Deels = 2 punten &nbsp;|&nbsp; Ja = 3 punten</p>
     <p style="margin-top:.5rem" data-i18n="scoring_p2">De <strong>totaalscore</strong> (13–39 punten) bepaalt de transitiefase. De <strong>deelscore per dimensie</strong> bepaalt of een dimensie zwak, matig of sterk scoort. Zwakke en matige dimensies gaan door naar stap 2.</p>
-    <p style="margin-top:.5rem; font-size:13px; color:#666;" data-i18n="scoring_p3">Deelscores SUMP/Institutioneel/Financieel (max 9): 3–5 zwak · 6–7 matig · 8–9 sterk<br>Deelscore Politiek-cultureel (max 12): 4–6 zwak · 7–9 matig · 10–12 sterk</p>
+    <p style="margin-top:.5rem; font-size:13px; color:#777;" data-i18n="scoring_p3">Deelscores SUMP/Institutioneel/Financieel (max 9): 3–5 zwak · 6–7 matig · 8–9 sterk<br>Deelscore Politiek-cultureel (max 12): 4–6 zwak · 7–9 matig · 10–12 sterk</p>
   </div>
 
   <div class="score-bar">
@@ -253,6 +478,13 @@
     <h3 style="font-size:16px;font-weight:600;margin-bottom:1rem" data-i18n="your_results">Uw resultaten</h3>
     <div id="phase-result"></div>
     <div class="dim-results" id="dim-results"></div>
+
+    <!-- Radar chart -->
+    <div class="radar-wrap">
+      <h3 data-i18n="radar_title">Stadsportret — vier dimensies</h3>
+      <canvas id="radarCanvas" width="340" height="300"></canvas>
+    </div>
+
     <div class="action-row">
       <button class="btn btn-primary" onclick="goSection(2)" id="btn-to-s2" data-i18n="to_s2">Naar stap 2 →</button>
       <button class="btn btn-secondary btn-sm" onclick="goSection(0)" data-i18n="back_btn">← Terug</button>
@@ -260,7 +492,7 @@
   </div>
 </section>
 
-<!-- STAP 2 -->
+<!-- ── STAP 2 ── -->
 <section id="s2">
   <h2 class="section-title" data-i18n="s2_title">Stap 2 — Verdieping</h2>
   <p class="section-sub" data-i18n="s2_sub">Doorloop alleen de dimensies die zwak of matig scoorden in stap 1. Per dimensie worden twee vragen gesteld met drie antwoordopties (optie 1 = zwakst, optie 3 = sterkst).</p>
@@ -275,12 +507,16 @@
   </div>
 </section>
 
-<!-- STAP 3 -->
+<!-- ── STAP 3 ── -->
 <section id="s3">
   <h2 class="section-title" data-i18n="s3_title">Stap 3 — Advies</h2>
   <p class="section-sub" data-i18n="s3_sub">Op basis van uw scores worden hieronder de relevante adviezen getoond. Adviezen zijn alleen zichtbaar voor de vastgestelde transitiefase en de dimensies die zwak of matig scoren.</p>
   <div id="s3-content"></div>
   <div class="action-row" style="margin-top:2rem">
+    <button class="btn btn-pdf" onclick="downloadPDF()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span data-i18n="pdf_btn">Download PDF</span>
+    </button>
     <button class="btn btn-secondary btn-sm" onclick="goSection(2)" data-i18n="back_s2">← Terug naar stap 2</button>
     <button class="btn btn-secondary btn-sm" onclick="resetAll()" data-i18n="restart_btn">Opnieuw beginnen</button>
   </div>
@@ -291,6 +527,7 @@
 const scores = {};
 const s2scores = {};
 let currentLang = 'nl';
+let cityName = '';
 
 const dimMap = { sump:[1,2,3], inst:[4,5,6], fin:[7,8,9], pol:[10,11,12,13] };
 
@@ -302,6 +539,9 @@ const tr = {
     hero_title:'Contextgevoelig Handelingskader voor SUMP-implementatie',
     hero_sub:'Een instrument voor stedelijke knooppunten en adviesbureaus om de positie in de mobiliteitstransitie te bepalen en gericht actie te ondernemen.',
     tag1:'4 dimensies', tag2:'3 stappen', tag3:'Gebaseerd op casusonderzoek',
+    city_input_title:'Voor welke stad gebruikt u dit kader?',
+    city_placeholder:'Naam van de stad (optioneel)',
+    city_confirm_btn:'Bevestigen',
     about_title:'Over dit kader',
     about_p1:'Dit handelingskader is ontwikkeld als eindproduct van een afstudeeronderzoek naar de implementatie van Sustainable Urban Mobility Plans (SUMPs) in Europese stedelijke knooppunten. Het kader is gebaseerd op vergelijkend casusonderzoek naar vier Europese steden — Napels, Brașov, Parijs en Kopenhagen — die zich elk in een andere fase van de mobiliteitstransitie bevinden.',
     about_p2:'Door deze steden te analyseren op vier dimensies en te plaatsen binnen het DRIFT-transitiemodel, zijn patronen zichtbaar geworden die verklaren waarom sommige steden sneller vorderen dan andere. Dit kader vertaalt die inzichten naar concrete, bruikbare adviezen.',
@@ -323,6 +563,7 @@ const tr = {
     scoring_p3:'Deelscores SUMP/Institutioneel/Financieel (max 9): 3–5 zwak · 6–7 matig · 8–9 sterk<br>Deelscore Politiek-cultureel (max 12): 4–6 zwak · 7–9 matig · 10–12 sterk',
     total_score_lbl:'Totaalscore', answered_lbl:'Beantwoord',
     your_results:'Uw resultaten',
+    radar_title:'Stadsportret — vier dimensies',
     to_s2:'Naar stap 2 →', back_btn:'← Terug',
     s2_title:'Stap 2 — Verdieping',
     s2_sub:'Doorloop alleen de dimensies die zwak of matig scoorden in stap 1. Per dimensie worden twee vragen gesteld met drie antwoordopties (optie 1 = zwakst, optie 3 = sterkst).',
@@ -331,6 +572,7 @@ const tr = {
     s3_title:'Stap 3 — Advies',
     s3_sub:'Op basis van uw scores worden hieronder de relevante adviezen getoond. Adviezen zijn alleen zichtbaar voor de vastgestelde transitiefase en de dimensies die zwak of matig scoren.',
     back_s2:'← Terug naar stap 2', restart_btn:'Opnieuw beginnen',
+    pdf_btn:'Download PDF',
     all_strong_s2:'Alle dimensies scoren sterk. Stap 2 is niet van toepassing.',
     all_strong_s3:'Alle dimensies scoren sterk. Er zijn geen specifieke adviezen — de stad bevindt zich in een gezonde positie. Overweeg kennis te delen via Europese netwerken.',
     all_strong_btn:'Alle dimensies sterk — naar stap 3 →',
@@ -342,10 +584,10 @@ const tr = {
     phase_desc_takeoff:'Momentum aanwezig, maar structurele verankering ontbreekt nog.',
     phase_desc_acc:'Implementatie versnelt, systeemintegratie nog onvolledig.',
     phase_desc_stab:'Volledig verankerd SUMP met meetbare resultaten op alle dimensies.',
-    dim_lbl_sump:'SUMP-kwaliteit  (stellingen 1–3)',
-    dim_lbl_inst:'Institutioneel & Governance  (stellingen 4–6)',
-    dim_lbl_fin:'Financieel  (stellingen 7–9)',
-    dim_lbl_pol:'Politiek-cultureel  (stellingen 10–13)',
+    dim_lbl_sump:'SUMP-kwaliteit  (stellingen 1–3)',
+    dim_lbl_inst:'Institutioneel & Governance  (stellingen 4–6)',
+    dim_lbl_fin:'Financieel  (stellingen 7–9)',
+    dim_lbl_pol:'Politiek-cultureel  (stellingen 10–13)',
   },
   en: {
     nav_intro:'Introduction', nav_s1:'Step 1', nav_s2:'Step 2', nav_s3:'Step 3',
@@ -353,6 +595,9 @@ const tr = {
     hero_title:'Context-Sensitive Action Framework for SUMP Implementation',
     hero_sub:'A tool for urban nodes and consultancies to determine their position in the mobility transition and take targeted action.',
     tag1:'4 dimensions', tag2:'3 steps', tag3:'Based on case study research',
+    city_input_title:'For which city are you using this framework?',
+    city_placeholder:'City name (optional)',
+    city_confirm_btn:'Confirm',
     about_title:'About this framework',
     about_p1:'This action framework was developed as the final product of a graduation research project on the implementation of Sustainable Urban Mobility Plans (SUMPs) in European urban nodes. The framework is based on comparative case study research of four European cities — Naples, Brașov, Paris and Copenhagen — each at a different stage of the mobility transition.',
     about_p2:'By analysing these cities across four dimensions and positioning them within the DRIFT transition model, patterns emerged that explain why some cities progress faster than others. This framework translates those insights into concrete, actionable recommendations.',
@@ -374,6 +619,7 @@ const tr = {
     scoring_p3:'Sub-scores SUMP/Institutional/Financial (max 9): 3–5 weak · 6–7 moderate · 8–9 strong<br>Sub-score Political-cultural (max 12): 4–6 weak · 7–9 moderate · 10–12 strong',
     total_score_lbl:'Total score', answered_lbl:'Answered',
     your_results:'Your results',
+    radar_title:'City portrait — four dimensions',
     to_s2:'To step 2 →', back_btn:'← Back',
     s2_title:'Step 2 — Deep-dive',
     s2_sub:'Only go through the dimensions that scored weak or moderate in step 1. Per dimension two questions are asked with three answer options (option 1 = weakest, option 3 = strongest).',
@@ -382,6 +628,7 @@ const tr = {
     s3_title:'Step 3 — Advice',
     s3_sub:'Based on your scores, the relevant recommendations are shown below. Recommendations are only shown for the identified transition phase and the dimensions that score weak or moderate.',
     back_s2:'← Back to step 2', restart_btn:'Start over',
+    pdf_btn:'Download PDF',
     all_strong_s2:'All dimensions score strong. Step 2 is not applicable.',
     all_strong_s3:'All dimensions score strong. There are no specific recommendations — the city is in a healthy position. Consider sharing knowledge via European networks.',
     all_strong_btn:'All dimensions strong — to step 3 →',
@@ -393,205 +640,181 @@ const tr = {
     phase_desc_takeoff:'Momentum is present, but structural embedding is still lacking.',
     phase_desc_acc:'Implementation is accelerating, system integration still incomplete.',
     phase_desc_stab:'Fully embedded SUMP with measurable results across all dimensions.',
-    dim_lbl_sump:'SUMP quality  (statements 1–3)',
-    dim_lbl_inst:'Institutional & Governance  (statements 4–6)',
-    dim_lbl_fin:'Financial  (statements 7–9)',
-    dim_lbl_pol:'Political-cultural  (statements 10–13)',
+    dim_lbl_sump:'SUMP quality  (statements 1–3)',
+    dim_lbl_inst:'Institutional & Governance  (statements 4–6)',
+    dim_lbl_fin:'Financial  (statements 7–9)',
+    dim_lbl_pol:'Political-cultural  (statements 10–13)',
   }
 };
 
 function t(key) { return tr[currentLang][key] || tr.nl[key] || key; }
 
-// ── Question data (nl + en) ───────────────────────────────
+// ── Question data ────────────────────────────────────────
 const questions = {
   sump: [
-    {
-      nl: { text:'1. De stad beschikt over een herziene, geactualiseerde of doorontwikkelde versie van een duurzaam mobiliteitsplan die voortbouwt op eerdere plannen en ervaringen.', reason:'Een ontbrekend of gefragmenteerd plan is het sterkste signaal van een vroege transitiefase.' },
-      en: { text:'1. The city has a revised, updated or further developed version of a sustainable mobility plan that builds on earlier plans and experiences.', reason:'A missing or fragmented plan is the strongest signal of an early transition phase.' }
-    },
-    {
-      nl: { text:'2. Het plan bevat zowel kwantitatieve als kwalitatieve doelstellingen, elk voorzien van een concrete termijn.', reason:'Doelen zonder termijn of meetbaarheid worden zelden daadwerkelijk nagestreefd.' },
-      en: { text:'2. The plan contains both quantitative and qualitative objectives, each with a concrete deadline.', reason:'Goals without a deadline or measurability are rarely actively pursued.' }
-    },
-    {
-      nl: { text:'3. Er is een actief monitoringssysteem dat de voortgang van het plan bijhoudt en publiek rapporteert.', reason:'Monitoring bepaalt of beleid gevolgd wordt of papier blijft.' },
-      en: { text:'3. There is an active monitoring system that tracks progress of the plan and reports publicly.', reason:'Monitoring determines whether policy is followed or remains paper.' }
-    }
+    { nl:{text:'1. De stad beschikt over een herziene, geactualiseerde of doorontwikkelde versie van een duurzaam mobiliteitsplan die voortbouwt op eerdere plannen en ervaringen.',reason:'Een ontbrekend of gefragmenteerd plan is het sterkste signaal van een vroege transitiefase.'},en:{text:'1. The city has a revised, updated or further developed version of a sustainable mobility plan that builds on earlier plans and experiences.',reason:'A missing or fragmented plan is the strongest signal of an early transition phase.'} },
+    { nl:{text:'2. Het plan bevat zowel kwantitatieve als kwalitatieve doelstellingen, elk voorzien van een concrete termijn.',reason:'Doelen zonder termijn of meetbaarheid worden zelden daadwerkelijk nagestreefd.'},en:{text:'2. The plan contains both quantitative and qualitative objectives, each with a concrete deadline.',reason:'Goals without a deadline or measurability are rarely actively pursued.'} },
+    { nl:{text:'3. Er is een actief monitoringssysteem dat de voortgang van het plan bijhoudt en publiek rapporteert.',reason:'Monitoring bepaalt of beleid gevolgd wordt of papier blijft.'},en:{text:'3. There is an active monitoring system that tracks progress of the plan and reports publicly.',reason:'Monitoring determines whether policy is followed or remains paper.'} }
   ],
   inst: [
-    {
-      nl: { text:'4. Er is een organisatie met formeel mandaat over mobiliteit in de stad en duidelijkheid over verantwoordelijkheidsgebieden.', reason:'Dit onthult direct of gebiedsafbakening een bottleneck is.' },
-      en: { text:'4. There is an organisation with formal mandate over mobility in the city and clarity on areas of responsibility.', reason:'This directly reveals whether area delineation is a bottleneck.' }
-    },
-    {
-      nl: { text:'5. De gemeentelijke organisatie beschikt over voldoende capaciteit en expertise om duurzame mobiliteitsmaatregelen zelfstandig te initiëren en te coördineren.', reason:'Zonder interne capaciteit blijft uitvoering afhankelijk van externe partijen of politieke conjunctuur.' },
-      en: { text:'5. The municipal organisation has sufficient capacity and expertise to independently initiate and coordinate sustainable mobility measures.', reason:'Without internal capacity, implementation remains dependent on external parties or political cycles.' }
-    },
-    {
-      nl: { text:'6. Mobiliteitsbeleid wordt niet uitsluitend op gemeentelijk niveau gemaakt, maar structureel afgestemd met de bredere regio via formele samenwerkingsverbanden.', reason:'Zonder regionale verankering fragmenteert uitvoering over gemeentegrenzen.' },
-      en: { text:'6. Mobility policy is not made at municipal level alone, but is structurally coordinated with the wider region through formal partnerships.', reason:'Without regional embedding, implementation fragments across municipal boundaries.' }
-    }
+    { nl:{text:'4. Er is een organisatie met formeel mandaat over mobiliteit in de stad en duidelijkheid over verantwoordelijkheidsgebieden.',reason:'Dit onthult direct of gebiedsafbakening een bottleneck is.'},en:{text:'4. There is an organisation with formal mandate over mobility in the city and clarity on areas of responsibility.',reason:'This directly reveals whether area delineation is a bottleneck.'} },
+    { nl:{text:'5. De gemeentelijke organisatie beschikt over voldoende capaciteit en expertise om duurzame mobiliteitsmaatregelen zelfstandig te initiëren en te coördineren.',reason:'Zonder interne capaciteit blijft uitvoering afhankelijk van externe partijen of politieke conjunctuur.'},en:{text:'5. The municipal organisation has sufficient capacity and expertise to independently initiate and coordinate sustainable mobility measures.',reason:'Without internal capacity, implementation remains dependent on external parties or political cycles.'} },
+    { nl:{text:'6. Mobiliteitsbeleid wordt niet uitsluitend op gemeentelijk niveau gemaakt, maar structureel afgestemd met de bredere regio via formele samenwerkingsverbanden.',reason:'Zonder regionale verankering fragmenteert uitvoering over gemeentegrenzen.'},en:{text:'6. Mobility policy is not made at municipal level alone, but is structurally coordinated with the wider region through formal partnerships.',reason:'Without regional embedding, implementation fragments across municipal boundaries.'} }
   ],
   fin: [
-    {
-      nl: { text:'7. Er is een meerjarig budget vastgesteld voor de uitvoering van het mobiliteitsplan.', reason:'Eenmalige projectbudgetten zijn geen basis voor structurele transitie.' },
-      en: { text:'7. A multi-year budget has been established for implementing the mobility plan.', reason:'One-off project budgets are no basis for structural transition.' }
-    },
-    {
-      nl: { text:'8. Beschikbare externe financieringsmogelijkheden, zoals Europese fondsen, worden actief en effectief benut.', reason:'Dit zegt iets over financiële capaciteit én het vermogen om kansen te signaleren en te verzilveren.' },
-      en: { text:'8. Available external financing options, such as European funds, are actively and effectively used.', reason:'This reflects financial capacity and the ability to identify and capitalise on opportunities.' }
-    },
-    {
-      nl: { text:'9. Het beschikbare budget wordt doelgericht ingezet, tijdig besteed en evenredig verdeeld over de mobiliteitsdoelstellingen.', reason:'Budgetten die niet of te laat worden ingezet ondermijnen de geloofwaardigheid van het plan.' },
-      en: { text:'9. The available budget is deployed purposefully, spent on time and distributed proportionally across mobility objectives.', reason:'Budgets that are not or too late deployed undermine the credibility of the plan.' }
-    }
+    { nl:{text:'7. Er is een meerjarig budget vastgesteld voor de uitvoering van het mobiliteitsplan.',reason:'Eenmalige projectbudgetten zijn geen basis voor structurele transitie.'},en:{text:'7. A multi-year budget has been established for implementing the mobility plan.',reason:'One-off project budgets are no basis for structural transition.'} },
+    { nl:{text:'8. Beschikbare externe financieringsmogelijkheden, zoals Europese fondsen, worden actief en effectief benut.',reason:'Dit zegt iets over financiële capaciteit én het vermogen om kansen te signaleren en te verzilveren.'},en:{text:'8. Available external financing options, such as European funds, are actively and effectively used.',reason:'This reflects financial capacity and the ability to identify and capitalise on opportunities.'} },
+    { nl:{text:'9. Het beschikbare budget wordt doelgericht ingezet, tijdig besteed en evenredig verdeeld over de mobiliteitsdoelstellingen.',reason:'Budgetten die niet of te laat worden ingezet ondermijnen de geloofwaardigheid van het plan.'},en:{text:'9. The available budget is deployed purposefully, spent on time and distributed proportionally across mobility objectives.',reason:'Budgets that are not or too late deployed undermine the credibility of the plan.'} }
   ],
   pol: [
-    {
-      nl: { text:'10. Duurzame mobiliteit heeft in de recente bestuursperiode geleid tot aantoonbare politieke keuzes waarbij prioritering naar duurzame mobiliteit is te merken.', reason:'Elke stad zegt mobiliteit belangrijk te vinden — dit vraagt om bewijs in concrete besluiten.' },
-      en: { text:'10. Sustainable mobility has led to demonstrable political choices in the recent governance period, with a clear prioritisation towards sustainable mobility.', reason:'Every city claims to value mobility — this requires evidence in concrete decisions.' }
-    },
-    {
-      nl: { text:'11. Er is breed maatschappelijk draagvlak voor duurzame mobiliteitsinitiatieven, ook als deze ten koste gaan van ruimte voor de auto.', reason:'Weerstand op het moment dat het concreet wordt, is de meest voorkomende politiek-culturele bottleneck.' },
-      en: { text:'11. There is broad public support for sustainable mobility initiatives, even when these come at the expense of space for cars.', reason:'Resistance when things become concrete is the most common political-cultural bottleneck.' }
-    },
-    {
-      nl: { text:'12. Er zijn actieve organisaties of burgerinitiatieven die pleiten voor duurzame mobiliteit, die hier structureel over rapporteren en waarvan de inbreng aantoonbaar wordt meegenomen in beleid.', reason:'Dit is een proxy voor politiek-culturele rijpheid én voor de kwaliteit van participatieve governance.' },
-      en: { text:'12. There are active organisations or civic initiatives advocating for sustainable mobility, reporting on it structurally, and whose input is demonstrably incorporated into policy.', reason:'This is a proxy for political-cultural maturity and for the quality of participatory governance.' }
-    },
-    {
-      nl: { text:'13. Duurzame mobiliteit wordt openlijk gepromoot en gestimuleerd door middel van investeringen, reclame, voorlichting en deelmobiliteit.', reason:'Politieke prioritering wordt duidelijk door acties en initiatieven.' },
-      en: { text:'13. Sustainable mobility is openly promoted and encouraged through investments, advertising, public information and shared mobility.', reason:'Political prioritisation is demonstrated through actions and initiatives.' }
-    }
+    { nl:{text:'10. Duurzame mobiliteit heeft in de recente bestuursperiode geleid tot aantoonbare politieke keuzes waarbij prioritering naar duurzame mobiliteit is te merken.',reason:'Elke stad zegt mobiliteit belangrijk te vinden — dit vraagt om bewijs in concrete besluiten.'},en:{text:'10. Sustainable mobility has led to demonstrable political choices in the recent governance period, with a clear prioritisation towards sustainable mobility.',reason:'Every city claims to value mobility — this requires evidence in concrete decisions.'} },
+    { nl:{text:'11. Er is breed maatschappelijk draagvlak voor duurzame mobiliteitsinitiatieven, ook als deze ten koste gaan van ruimte voor de auto.',reason:'Weerstand op het moment dat het concreet wordt, is de meest voorkomende politiek-culturele bottleneck.'},en:{text:'11. There is broad public support for sustainable mobility initiatives, even when these come at the expense of space for cars.',reason:'Resistance when things become concrete is the most common political-cultural bottleneck.'} },
+    { nl:{text:'12. Er zijn actieve organisaties of burgerinitiatieven die pleiten voor duurzame mobiliteit, die hier structureel over rapporteren en waarvan de inbreng aantoonbaar wordt meegenomen in beleid.',reason:'Dit is een proxy voor politiek-culturele rijpheid én voor de kwaliteit van participatieve governance.'},en:{text:'12. There are active organisations or civic initiatives advocating for sustainable mobility, reporting on it structurally, and whose input is demonstrably incorporated into policy.',reason:'This is a proxy for political-cultural maturity and for the quality of participatory governance.'} },
+    { nl:{text:'13. Duurzame mobiliteit wordt openlijk gepromoot en gestimuleerd door middel van investeringen, reclame, voorlichting en deelmobiliteit.',reason:'Politieke prioritering wordt duidelijk door acties en initiatieven.'},en:{text:'13. Sustainable mobility is openly promoted and encouraged through investments, advertising, public information and shared mobility.',reason:'Political prioritisation is demonstrated through actions and initiatives.'} }
   ]
 };
 
 const s2questions = {
-  sump: {
-    nl: [
-      { q:'Hoe wordt modal shift gemeten en gerapporteerd?', opts:['Onregelmatig en alleen binnen de stadskern of het SUMP-gebied','Regelmatig maar de meting dekt niet het gehele SUMP-gebied, of onregelmatig maar wel dekkend voor het gehele SUMP-gebied inclusief bewegingen van en naar het stedelijk gebied','Jaarlijks of tweejaarlijks, over het gehele SUMP-gebied inclusief bewegingen van en naar het stedelijke gebied, vastgelegd in een publiek overzichtsrapport'] },
-      { q:'In hoeverre is de voortgang van het mobiliteitsplan aantoonbaar en publiek inzichtelijk gemaakt?', opts:['Voortgang is niet of nauwelijks publiek beschikbaar','Er zijn evaluaties maar zonder directe koppeling aan de doelstellingen uit het plan','Er is een publieke voortgangsrapportage met directe koppeling aan plandoelstellingen en een vastgestelde volgende evaluatiedatum'] }
+  sump:{
+    nl:[
+      {q:'Hoe wordt modal shift gemeten en gerapporteerd?',opts:['Onregelmatig en alleen binnen de stadskern of het SUMP-gebied','Regelmatig maar de meting dekt niet het gehele SUMP-gebied, of onregelmatig maar wel dekkend voor het gehele SUMP-gebied inclusief bewegingen van en naar het stedelijk gebied','Jaarlijks of tweejaarlijks, over het gehele SUMP-gebied inclusief bewegingen van en naar het stedelijke gebied, vastgelegd in een publiek overzichtsrapport']},
+      {q:'In hoeverre is de voortgang van het mobiliteitsplan aantoonbaar en publiek inzichtelijk gemaakt?',opts:['Voortgang is niet of nauwelijks publiek beschikbaar','Er zijn evaluaties maar zonder directe koppeling aan de doelstellingen uit het plan','Er is een publieke voortgangsrapportage met directe koppeling aan plandoelstellingen en een vastgestelde volgende evaluatiedatum']}
     ],
-    en: [
-      { q:'How is modal shift measured and reported?', opts:['Irregularly and only within the city centre or SUMP area','Regularly but the measurement does not cover the entire SUMP area, or irregularly but covering the full SUMP area including movements to and from the urban area','Annually or biannually, across the entire SUMP area including movements to and from the urban area, recorded in a public summary report'] },
-      { q:'To what extent has progress on the mobility plan been made demonstrably and publicly transparent?', opts:['Progress is not or barely publicly available','Evaluations exist but without a direct link to the objectives in the plan','There is a public progress report with a direct link to plan objectives and a confirmed next evaluation date'] }
+    en:[
+      {q:'How is modal shift measured and reported?',opts:['Irregularly and only within the city centre or SUMP area','Regularly but the measurement does not cover the entire SUMP area, or irregularly but covering the full SUMP area including movements to and from the urban area','Annually or biannually, across the entire SUMP area including movements to and from the urban area, recorded in a public summary report']},
+      {q:'To what extent has progress on the mobility plan been made demonstrably and publicly transparent?',opts:['Progress is not or barely publicly available','Evaluations exist but without a direct link to the objectives in the plan','There is a public progress report with a direct link to plan objectives and a confirmed next evaluation date']}
     ]
   },
-  inst: {
-    nl: [
-      { q:'In hoeverre is duurzame mobiliteit het organisatorische vertrekpunt en is daar voldoende capaciteit voor vrijgemaakt?', opts:['Duurzame mobiliteit is een nevendoelstelling, capaciteit is beperkt en gedeeld met andere dossiers','Duurzame mobiliteit staat op de agenda maar de beschikbare capaciteit sluit daar onvoldoende op aan','Duurzame mobiliteit is het organisatorische vertrekpunt met dedicated capaciteit en mandaat'] },
-      { q:'In hoeverre vindt structurele afstemming plaats met alle relevante partijen in de regio?', opts:['Afstemming vindt ad hoc of alleen met een beperkt aantal partijen plaats','Er is regelmatig overleg maar niet met alle relevante partijen en zonder formele verplichting','Er is een formeel samenwerkingsverband met alle relevante partijen, vaste overlegmomenten en vastgelegde verantwoordelijkheden'] }
+  inst:{
+    nl:[
+      {q:'In hoeverre is duurzame mobiliteit het organisatorische vertrekpunt en is daar voldoende capaciteit voor vrijgemaakt?',opts:['Duurzame mobiliteit is een nevendoelstelling, capaciteit is beperkt en gedeeld met andere dossiers','Duurzame mobiliteit staat op de agenda maar de beschikbare capaciteit sluit daar onvoldoende op aan','Duurzame mobiliteit is het organisatorische vertrekpunt met dedicated capaciteit en mandaat']},
+      {q:'In hoeverre vindt structurele afstemming plaats met alle relevante partijen in de regio?',opts:['Afstemming vindt ad hoc of alleen met een beperkt aantal partijen plaats','Er is regelmatig overleg maar niet met alle relevante partijen en zonder formele verplichting','Er is een formeel samenwerkingsverband met alle relevante partijen, vaste overlegmomenten en vastgelegde verantwoordelijkheden']}
     ],
-    en: [
-      { q:'To what extent is sustainable mobility the organisational starting point and has sufficient capacity been allocated?', opts:['Sustainable mobility is a secondary objective, capacity is limited and shared with other files','Sustainable mobility is on the agenda but available capacity is insufficient to match it','Sustainable mobility is the organisational starting point with dedicated capacity and mandate'] },
-      { q:'To what extent does structural coordination take place with all relevant parties in the region?', opts:['Coordination is ad hoc or only with a limited number of parties','Regular consultations take place but not with all relevant parties and without a formal obligation','There is a formal partnership with all relevant parties, fixed consultation moments and defined responsibilities'] }
+    en:[
+      {q:'To what extent is sustainable mobility the organisational starting point and has sufficient capacity been allocated?',opts:['Sustainable mobility is a secondary objective, capacity is limited and shared with other files','Sustainable mobility is on the agenda but available capacity is insufficient to match it','Sustainable mobility is the organisational starting point with dedicated capacity and mandate']},
+      {q:'To what extent does structural coordination take place with all relevant parties in the region?',opts:['Coordination is ad hoc or only with a limited number of parties','Regular consultations take place but not with all relevant parties and without a formal obligation','There is a formal partnership with all relevant parties, fixed consultation moments and defined responsibilities']}
     ]
   },
-  fin: {
-    nl: [
-      { q:'In hoeverre worden beschikbare externe financieringsmiddelen zoals Europese subsidies doelmatig ingezet?', opts:['Externe middelen worden niet aangetrokken of ingezet buiten de oorspronkelijke doelstelling','Externe middelen worden aangetrokken maar de relatie met duurzame mobiliteitsambities is onduidelijk','Externe middelen worden gericht en doelmatig ingezet, aantoonbaar in lijn met de mobiliteitsambities'] },
-      { q:'Wordt er binnen de begroting actief geld vrijgemaakt van autogeoriënteerde infrastructuur voor OV, fiets- of voetgangersinfrastructuur?', opts:['Nee, budgetten staan los van elkaar','Incidenteel, maar niet als structureel begrotingsprincipe','Ja, er is een aantoonbare verschuiving in budgetten van auto naar duurzame modi'] }
+  fin:{
+    nl:[
+      {q:'In hoeverre worden beschikbare externe financieringsmiddelen zoals Europese subsidies doelmatig ingezet?',opts:['Externe middelen worden niet aangetrokken of ingezet buiten de oorspronkelijke doelstelling','Externe middelen worden aangetrokken maar de relatie met duurzame mobiliteitsambities is onduidelijk','Externe middelen worden gericht en doelmatig ingezet, aantoonbaar in lijn met de mobiliteitsambities']},
+      {q:'Wordt er binnen de begroting actief geld vrijgemaakt van autogeoriënteerde infrastructuur voor OV, fiets- of voetgangersinfrastructuur?',opts:['Nee, budgetten staan los van elkaar','Incidenteel, maar niet als structureel begrotingsprincipe','Ja, er is een aantoonbare verschuiving in budgetten van auto naar duurzame modi']}
     ],
-    en: [
-      { q:'To what extent are available external funding sources such as European subsidies used effectively?', opts:['External funds are not attracted or are used outside the original objective','External funds are attracted but the link to sustainable mobility ambitions is unclear','External funds are targeted and effectively deployed, demonstrably aligned with mobility ambitions'] },
-      { q:'Is budget being actively reallocated within the budget from car-oriented infrastructure to public transport, cycling or pedestrian infrastructure?', opts:['No, budgets are separate','Incidentally, but not as a structural budget principle','Yes, there is a demonstrable shift in budgets from car to sustainable modes'] }
+    en:[
+      {q:'To what extent are available external funding sources such as European subsidies used effectively?',opts:['External funds are not attracted or are used outside the original objective','External funds are attracted but the link to sustainable mobility ambitions is unclear','External funds are targeted and effectively deployed, demonstrably aligned with mobility ambitions']},
+      {q:'Is budget being actively reallocated within the budget from car-oriented infrastructure to public transport, cycling or pedestrian infrastructure?',opts:['No, budgets are separate','Incidentally, but not as a structural budget principle','Yes, there is a demonstrable shift in budgets from car to sustainable modes']}
     ]
   },
-  pol: {
-    nl: [
-      { q:'Zijn er actieve organisaties of burgerinitiatieven op het gebied van duurzame mobiliteit en worden deze structureel gehoord?', opts:['Nauwelijks actieve organisaties, of ze worden niet betrokken bij beleid','Er zijn organisaties actief maar hun inbreng wordt incidenteel en niet structureel meegenomen','Er zijn meerdere actieve organisaties die structureel worden betrokken en aantoonbaar invloed hebben op besluitvorming'] },
-      { q:'Is er de afgelopen bestuursperiode een politiek besluit genomen dat autogebruik structureel beperkt?', opts:['Nee','Er zijn plannen besproken maar geen definitief besluit genomen','Ja, vastgesteld besluit met concrete uitvoering zoals tariefzones, parkeerbeleid of snelheidsverlaging'] }
+  pol:{
+    nl:[
+      {q:'Zijn er actieve organisaties of burgerinitiatieven op het gebied van duurzame mobiliteit en worden deze structureel gehoord?',opts:['Nauwelijks actieve organisaties, of ze worden niet betrokken bij beleid','Er zijn organisaties actief maar hun inbreng wordt incidenteel en niet structureel meegenomen','Er zijn meerdere actieve organisaties die structureel worden betrokken en aantoonbaar invloed hebben op besluitvorming']},
+      {q:'Is er de afgelopen bestuursperiode een politiek besluit genomen dat autogebruik structureel beperkt?',opts:['Nee','Er zijn plannen besproken maar geen definitief besluit genomen','Ja, vastgesteld besluit met concrete uitvoering zoals tariefzones, parkeerbeleid of snelheidsverlaging']}
     ],
-    en: [
-      { q:'Are there active organisations or civic initiatives in the area of sustainable mobility and are these structurally heard?', opts:['Hardly any active organisations, or they are not involved in policy','Organisations are active but their input is incorporated incidentally, not structurally','There are multiple active organisations that are structurally involved and demonstrably influence decision-making'] },
-      { q:'Has a political decision been taken in the past governance period that structurally limits car use?', opts:['No','Plans have been discussed but no definitive decision has been taken','Yes, an established decision with concrete implementation such as pricing zones, parking policy or speed reduction'] }
+    en:[
+      {q:'Are there active organisations or civic initiatives in the area of sustainable mobility and are these structurally heard?',opts:['Hardly any active organisations, or they are not involved in policy','Organisations are active but their input is incorporated incidentally, not structurally','There are multiple active organisations that are structurally involved and demonstrably influence decision-making']},
+      {q:'Has a political decision been taken in the past governance period that structurally limits car use?',opts:['No','Plans have been discussed but no definitive decision has been taken','Yes, an established decision with concrete implementation such as pricing zones, parking policy or speed reduction']}
     ]
   }
 };
 
 const advice = {
-  pre: {
-    sump: {
-      nl: { text:'Werk samen met een extern adviesbureau dat de monitoring, data en informatievoorziening verzorgt. Een extern bureau zorgt voor een helder, overzichtelijk en toegankelijk SUMP-document en een betrouwbare dataverzameling, zonder dat de gemeente zelf al over die capaciteit hoeft te beschikken. Dit is in deze fase de meest directe manier om documentkwaliteit te garanderen.', example:'Napels werkte bij haar eerste SUMP nauw samen met een extern bureau, wat resulteerde in een overzichtelijk basisdocument en gestructureerde monitoring — iets wat de gemeente in die fase niet zelf had kunnen realiseren.' },
-      en: { text:'Work with an external consultancy to handle monitoring, data and information provision. An external firm ensures a clear, accessible SUMP document and reliable data collection, without the municipality needing to have that capacity itself. In this phase it is the most direct way to guarantee document quality.', example:'Naples worked closely with an external firm on its first SUMP, resulting in a clear base document and structured monitoring — something the municipality could not have realised itself at that stage.' }
+  pre:{
+    sump:{
+      nl:{text:'Werk samen met een extern adviesbureau dat de monitoring, data en informatievoorziening verzorgt. Een extern bureau zorgt voor een helder, overzichtelijk en toegankelijk SUMP-document en een betrouwbare dataverzameling, zonder dat de gemeente zelf al over die capaciteit hoeft te beschikken. Dit is in deze fase de meest directe manier om documentkwaliteit te garanderen.',example:'Napels werkte bij haar eerste SUMP nauw samen met een extern bureau, wat resulteerde in een overzichtelijk basisdocument en gestructureerde monitoring — iets wat de gemeente in die fase niet zelf had kunnen realiseren.'},
+      en:{text:'Work with an external consultancy to handle monitoring, data and information provision. An external firm ensures a clear, accessible SUMP document and reliable data collection, without the municipality needing to have that capacity itself. In this phase it is the most direct way to guarantee document quality.',example:'Naples worked closely with an external firm on its first SUMP, resulting in a clear base document and structured monitoring — something the municipality could not have realised itself at that stage.'}
     },
-    inst: {
-      nl: { text:'Richt een interne organisatiestructuur in die duidelijk maakt wie het mandaat heeft over het SUMP-proces en wie verantwoordelijk is voor welk onderdeel. In deze fase gaat het puur om interne helderheid: wie trekt, wie beslist, wie rapporteert. Koppel het SUMP daarnaast aan bredere gemeentelijke doelen — klimaatbeleid, fietsbeleid, luchtkwaliteit — zodat het plan versterkt wat al loopt en niet als losstaand EU-project wordt gezien.', example:'Kopenhagen heeft van oudsher een gecentraliseerde aanpak gehanteerd met duidelijk belegde verantwoordelijkheden, gecombineerd met actieve samenwerking met omliggende gebieden in de stedelijke regio. Dit zorgde voor interne slagkracht én regionale coherentie.' },
-      en: { text:'Establish an internal organisational structure that makes clear who holds the mandate over the SUMP process and who is responsible for which component. In this phase it is purely about internal clarity: who leads, who decides, who reports. Also link the SUMP to broader municipal goals — climate policy, cycling policy, air quality — so the plan reinforces what is already running rather than being seen as a standalone EU project.', example:'Copenhagen has historically adopted a centralised approach with clearly assigned responsibilities, combined with active cooperation with surrounding areas in the urban region. This ensured internal effectiveness and regional coherence.' }
+    inst:{
+      nl:{text:'Richt een interne organisatiestructuur in die duidelijk maakt wie het mandaat heeft over het SUMP-proces en wie verantwoordelijk is voor welk onderdeel. In deze fase gaat het puur om interne helderheid: wie trekt, wie beslist, wie rapporteert. Koppel het SUMP daarnaast aan bredere gemeentelijke doelen — klimaatbeleid, fietsbeleid, luchtkwaliteit — zodat het plan versterkt wat al loopt en niet als losstaand EU-project wordt gezien.',example:'Kopenhagen heeft van oudsher een gecentraliseerde aanpak gehanteerd met duidelijk belegde verantwoordelijkheden, gecombineerd met actieve samenwerking met omliggende gebieden in de stedelijke regio. Dit zorgde voor interne slagkracht én regionale coherentie.'},
+      en:{text:'Establish an internal organisational structure that makes clear who holds the mandate over the SUMP process and who is responsible for which component. In this phase it is purely about internal clarity: who leads, who decides, who reports. Also link the SUMP to broader municipal goals — climate policy, cycling policy, air quality — so the plan reinforces what is already running rather than being seen as a standalone EU project.',example:'Copenhagen has historically adopted a centralised approach with clearly assigned responsibilities, combined with active cooperation with surrounding areas in the urban region. This ensured internal effectiveness and regional coherence.'}
     },
-    fin: {
-      nl: { text:'Inventariseer beschikbare EU-fondsen en dien een aanvraag in voor technische assistentie. Gebruik EU-geld bewust als hefboom: zelfs een kleine EU-bijdrage vergroot de geloofwaardigheid bij andere financiers en maakt het mobiliseren van intern gemeentelijk budget eenvoudiger. Het doel is niet zoveel mogelijk EU-geld binnenhalen, maar dat geld strategisch inzetten als vliegwiel voor bredere financiering.', example:'Kopenhagen maakt relatief weinig gebruik van EU-fondsen, maar het EU-geld dat binnenkomt dient expliciet als hefboom voor gemeentelijk budget en private investeringen — een model dat de afhankelijkheid van Brussel beperkt en de interne slagkracht vergroot.' },
-      en: { text:'Inventory available EU funds and submit an application for technical assistance. Use EU money deliberately as a lever: even a small EU contribution increases credibility with other funders and makes it easier to mobilise internal municipal budget. The goal is not to attract as much EU money as possible, but to use it strategically as a flywheel for broader financing.', example:'Copenhagen makes relatively little use of EU funds, but the EU money that comes in explicitly serves as a lever for municipal budget and private investments — a model that limits dependency on Brussels and increases internal effectiveness.' }
+    fin:{
+      nl:{text:'Inventariseer beschikbare EU-fondsen en dien een aanvraag in voor technische assistentie. Gebruik EU-geld bewust als hefboom: zelfs een kleine EU-bijdrage vergroot de geloofwaardigheid bij andere financiers en maakt het mobiliseren van intern gemeentelijk budget eenvoudiger. Het doel is niet zoveel mogelijk EU-geld binnenhalen, maar dat geld strategisch inzetten als vliegwiel voor bredere financiering.',example:'Kopenhagen maakt relatief weinig gebruik van EU-fondsen, maar het EU-geld dat binnenkomt dient expliciet als hefboom voor gemeentelijk budget en private investeringen — een model dat de afhankelijkheid van Brussel beperkt en de interne slagkracht vergroot.'},
+      en:{text:'Inventory available EU funds and submit an application for technical assistance. Use EU money deliberately as a lever: even a small EU contribution increases credibility with other funders and makes it easier to mobilise internal municipal budget. The goal is not to attract as much EU money as possible, but to use it strategically as a flywheel for broader financing.',example:'Copenhagen makes relatively little use of EU funds, but the EU money that comes in explicitly serves as a lever for municipal budget and private investments — a model that limits dependency on Brussels and increases internal effectiveness.'}
     },
-    pol: {
-      nl: { text:'Culturele verandering in mobiliteitsgedrag kost tijd en is niet af te dwingen via beleid. Wat wel mogelijk is, is ervoor zorgen dat de politiek niet jaren achterloopt op wat er al leeft in de samenleving. In deze fase gaat het om bewustwording: luister naar bewoners, belangengroepen en onafhankelijke organisaties om te begrijpen welke duurzame wensen er al zijn, en laat beleid daarbij aansluiten. Dat opbouwen van vertrouwen is de basis voor alles wat daarna komt.', example:'Kopenhagen bouwde haar fietscultuur op door systematisch te luisteren naar bewoners en onafhankelijke mobiliteitsorganisaties. Parijs deed hetzelfde door al vroeg belangengroepen zoals MDB (Mieux se Déplacer à Bicyclette) te betrekken bij de planvorming, wat de legitimiteit van latere maatregelen sterk vergrootte.' },
-      en: { text:'Cultural change in mobility behaviour takes time and cannot be forced through policy. What is possible is ensuring that politics does not lag years behind what already lives in society. In this phase it is about awareness: listen to residents, interest groups and independent organisations to understand what sustainable wishes already exist, and let policy connect to those. Building that trust is the foundation for everything that follows.', example:'Copenhagen built its cycling culture by systematically listening to residents and independent mobility organisations. Paris did the same by involving interest groups such as MDB (Mieux se Déplacer à Bicyclette) in planning at an early stage, which greatly increased the legitimacy of later measures.' }
+    pol:{
+      nl:{text:'Culturele verandering in mobiliteitsgedrag kost tijd en is niet af te dwingen via beleid. Wat wel mogelijk is, is ervoor zorgen dat de politiek niet jaren achterloopt op wat er al leeft in de samenleving. In deze fase gaat het om bewustwording: luister naar bewoners, belangengroepen en onafhankelijke organisaties om te begrijpen welke duurzame wensen er al zijn, en laat beleid daarbij aansluiten. Dat opbouwen van vertrouwen is de basis voor alles wat daarna komt.',example:'Kopenhagen bouwde haar fietscultuur op door systematisch te luisteren naar bewoners en onafhankelijke mobiliteitsorganisaties. Parijs deed hetzelfde door al vroeg belangengroepen zoals MDB (Mieux se Déplacer à Bicyclette) te betrekken bij de planvorming, wat de legitimiteit van latere maatregelen sterk vergrootte.'},
+      en:{text:'Cultural change in mobility behaviour takes time and cannot be forced through policy. What is possible is ensuring that politics does not lag years behind what already lives in society. In this phase it is about awareness: listen to residents, interest groups and independent organisations to understand what sustainable wishes already exist, and let policy connect to those. Building that trust is the foundation for everything that follows.',example:'Copenhagen built its cycling culture by systematically listening to residents and independent mobility organisations. Paris did the same by involving interest groups such as MDB (Mieux se Déplacer à Bicyclette) in planning at an early stage, which greatly increased the legitimacy of later measures.'}
     }
   },
-  takeoff: {
-    sump: {
-      nl: { text:'Een extern bureau kan nog ondersteunen, maar de focus verschuift naar het opbouwen van interne capaciteit. Uiteindelijk is het niet gewenst afhankelijk te zijn van derden voor eigen documenten. Essentieel in deze fase is de structuur van de documentatie: splits het SUMP en onderliggende plannen op over meerdere documenten. Zo worden documenten niet honderden pagina\'s groot — door verspreiding over meerdere thematische documenten kan er per document inhoudelijker ingegaan worden op een thema zonder het overzicht kwijt te raken.', example:'Parijs werkt met een gelaagd documentensysteem: een overkoepelend mobiliteitsplan op regionaal niveau, aangevuld met specifieke actieplannen per thema zoals fiets, OV en logistiek. Dit maakt plannen toegankelijker en beter toetsbaar.' },
-      en: { text:'An external firm can still provide support, but the focus shifts to building internal capacity. Ultimately it is not desirable to be dependent on third parties for your own documents. Essential in this phase is the structure of the documentation: split the SUMP and underlying plans across multiple documents. This prevents documents from growing to hundreds of pages — by spreading across multiple thematic documents, each document can go more in-depth on a topic without losing overview.', example:'Paris works with a layered document system: an overarching mobility plan at regional level, supplemented by specific action plans per theme such as cycling, public transport and logistics. This makes plans more accessible and easier to evaluate.' }
+  takeoff:{
+    sump:{
+      nl:{text:'Een extern bureau kan nog ondersteunen, maar de focus verschuift naar het opbouwen van interne capaciteit. Uiteindelijk is het niet gewenst afhankelijk te zijn van derden voor eigen documenten. Essentieel in deze fase is de structuur van de documentatie: splits het SUMP en onderliggende plannen op over meerdere documenten. Zo worden documenten niet honderden pagina\'s groot — door verspreiding over meerdere thematische documenten kan er per document inhoudelijker ingegaan worden op een thema zonder het overzicht kwijt te raken.',example:'Parijs werkt met een gelaagd documentensysteem: een overkoepelend mobiliteitsplan op regionaal niveau, aangevuld met specifieke actieplannen per thema zoals fiets, OV en logistiek. Dit maakt plannen toegankelijker en beter toetsbaar.'},
+      en:{text:'An external firm can still provide support, but the focus shifts to building internal capacity. Ultimately it is not desirable to be dependent on third parties for your own documents. Essential in this phase is the structure of the documentation: split the SUMP and underlying plans across multiple documents. This prevents documents from growing to hundreds of pages — by spreading across multiple thematic documents, each document can go more in-depth on a topic without losing overview.',example:'Paris works with a layered document system: an overarching mobility plan at regional level, supplemented by specific action plans per theme such as cycling, public transport and logistics. This makes plans more accessible and easier to evaluate.'}
     },
-    inst: {
-      nl: { text:'De interne organisatiestructuur staat nu — de aandacht verschuift naar buiten. In deze fase is de kern: nauw samenwerken met omliggende gemeenten bij het opstellen van documenten. Niet om één regionaal orgaan te vormen, maar om doelstellingen, definities en werkwijzen op elkaar af te stemmen. Als aangrenzende gemeenten andere doelen hanteren of andere meetmethoden gebruiken, ondermijnt dat de eigen SUMP-resultaten. De samenwerking in deze fase is inhoudelijk en documentgericht.', example:'Kopenhagen betrekt randgemeenten actief bij het opstellen van doelstellingen en indicatoren. De Københavns Kommune houdt het formele mandaat, maar omliggende gemeenten zijn inhoudelijk partner — wat zorgt voor regionale coherentie zonder bestuurlijke fusie.' },
-      en: { text:'The internal organisational structure is now in place — attention shifts outward. In this phase the core is: work closely with surrounding municipalities in drafting documents. Not to form one regional body, but to align objectives, definitions and working methods. If neighbouring municipalities use different goals or measurement methods, that undermines your own SUMP results. Cooperation in this phase is substantive and document-oriented.', example:'Copenhagen actively involves surrounding municipalities in developing objectives and indicators. Københavns Kommune retains the formal mandate, but surrounding municipalities are substantive partners — ensuring regional coherence without administrative merger.' }
+    inst:{
+      nl:{text:'De interne organisatiestructuur staat nu — de aandacht verschuift naar buiten. In deze fase is de kern: nauw samenwerken met omliggende gemeenten bij het opstellen van documenten. Niet om één regionaal orgaan te vormen, maar om doelstellingen, definities en werkwijzen op elkaar af te stemmen. Als aangrenzende gemeenten andere doelen hanteren of andere meetmethoden gebruiken, ondermijnt dat de eigen SUMP-resultaten. De samenwerking in deze fase is inhoudelijk en documentgericht.',example:'Kopenhagen betrekt randgemeenten actief bij het opstellen van doelstellingen en indicatoren. De Københavns Kommune houdt het formele mandaat, maar omliggende gemeenten zijn inhoudelijk partner — wat zorgt voor regionale coherentie zonder bestuurlijke fusie.'},
+      en:{text:'The internal organisational structure is now in place — attention shifts outward. In this phase the core is: work closely with surrounding municipalities in drafting documents. Not to form one regional body, but to align objectives, definitions and working methods. If neighbouring municipalities use different goals or measurement methods, that undermines your own SUMP results. Cooperation in this phase is substantive and document-oriented.',example:'Copenhagen actively involves surrounding municipalities in developing objectives and indicators. Københavns Kommune retains the formal mandate, but surrounding municipalities are substantive partners — ensuring regional coherence without administrative merger.'}
     },
-    fin: {
-      nl: { text:'Ontwikkel een meerjarig investeringsplan met prioritering per maatregel en koppeling aan beschikbare financieringsbronnen. Verbind SUMP-doelstellingen aan nationale klimaat- en energieplannen om cofinanciering vanuit nationale fondsen mogelijk te maken. Verken innovatieve financieringsvormen die private en publieke middelen combineren voor duurzame infrastructuurinvesteringen.', example:'Brașov koppelde haar SUMP-investeringen aan het nationaal programma voor regionale ontwikkeling, waardoor aanvullend nationaal budget vrijkwam dat puur via EU-fondsen niet beschikbaar was geweest.' },
-      en: { text:'Develop a multi-year investment plan with prioritisation per measure and links to available funding sources. Connect SUMP objectives to national climate and energy plans to enable co-financing from national funds. Explore innovative financing forms that combine private and public resources for sustainable infrastructure investments.', example:'Brașov linked its SUMP investments to the national programme for regional development, unlocking additional national budget that would not have been available through EU funds alone.' }
+    fin:{
+      nl:{text:'Ontwikkel een meerjarig investeringsplan met prioritering per maatregel en koppeling aan beschikbare financieringsbronnen. Verbind SUMP-doelstellingen aan nationale klimaat- en energieplannen om cofinanciering vanuit nationale fondsen mogelijk te maken. Verken innovatieve financieringsvormen die private en publieke middelen combineren voor duurzame infrastructuurinvesteringen.',example:'Brașov koppelde haar SUMP-investeringen aan het nationaal programma voor regionale ontwikkeling, waardoor aanvullend nationaal budget vrijkwam dat puur via EU-fondsen niet beschikbaar was geweest.'},
+      en:{text:'Develop a multi-year investment plan with prioritisation per measure and links to available funding sources. Connect SUMP objectives to national climate and energy plans to enable co-financing from national funds. Explore innovative financing forms that combine private and public resources for sustainable infrastructure investments.',example:'Brașov linked its SUMP investments to the national programme for regional development, unlocking additional national budget that would not have been available through EU funds alone.'}
     },
-    pol: {
-      nl: { text:'In de take-offase is de bereidheid bij bewoners voor duurzame mobiliteit vaak al aanwezig — de uitdaging verschuift van bewustwording naar omzetting. De overheid moet die bereidheid structureel benutten door echte participatiestructuren op te zetten: niet informeren, maar overleggen. Burgerinitiatieven die aansluiten bij SUMP-doelen verdienen actieve facilitering. Bewoners die merken dat hun inbreng terugkomt in beleid, versterken het maatschappelijk fundament voor de versnelling die in fase 3 nodig is.', example:'In Kopenhagen schommelt de tevredenheid van fietsende bewoners over de fietsstad al meer dan tien jaar tussen de 95% en 97%. Dat langdurige resultaat is geen toeval, maar het effect van beleid dat structureel aansluit bij wat inwoners nodig hebben.' },
-      en: { text:'In the take-off phase, residents\' willingness towards sustainable mobility is often already present — the challenge shifts from awareness to conversion. The government must structurally capitalise on that willingness by setting up genuine participation structures: not informing, but consulting. Civic initiatives that align with SUMP goals deserve active facilitation. Residents who see their input reflected in policy reinforce the social foundation needed for the acceleration required in phase 3.', example:'In Copenhagen, satisfaction among cycling residents with the cycling city has fluctuated between 95% and 97% for more than ten years. That lasting result is no coincidence, but the effect of policy that structurally matches what residents need.' }
+    pol:{
+      nl:{text:'In de take-offase is de bereidheid bij bewoners voor duurzame mobiliteit vaak al aanwezig — de uitdaging verschuift van bewustwording naar omzetting. De overheid moet die bereidheid structureel benutten door echte participatiestructuren op te zetten: niet informeren, maar overleggen. Burgerinitiatieven die aansluiten bij SUMP-doelen verdienen actieve facilitering. Bewoners die merken dat hun inbreng terugkomt in beleid, versterken het maatschappelijk fundament voor de versnelling die in fase 3 nodig is.',example:'In Kopenhagen schommelt de tevredenheid van fietsende bewoners over de fietsstad al meer dan tien jaar tussen de 95% en 97%. Dat langdurige resultaat is geen toeval, maar het effect van beleid dat structureel aansluit bij wat inwoners nodig hebben.'},
+      en:{text:'In the take-off phase, residents\' willingness towards sustainable mobility is often already present — the challenge shifts from awareness to conversion. The government must structurally capitalise on that willingness by setting up genuine participation structures: not informing, but consulting. Civic initiatives that align with SUMP goals deserve active facilitation. Residents who see their input reflected in policy reinforce the social foundation needed for the acceleration required in phase 3.',example:'In Copenhagen, satisfaction among cycling residents with the cycling city has fluctuated between 95% and 97% for more than ten years. That lasting result is no coincidence, but the effect of policy that structurally matches what residents need.'}
     }
   },
-  acc: {
-    sump: {
-      nl: { text:'Begin vrijwel direct na de vaststelling van het huidige SUMP met de voorbereiding van de volgende generatie. Zo kan er live meegeschreven worden terwijl de implementatie loopt: wat werkt, wat niet, wat moet anders. Zorg dat documenten ook geschikt zijn voor externe toetsing, onder meer door ze in het Engels te publiceren. Buitenlandse peers en Europese programma\'s zoals CIVITAS kunnen dan inhoudelijk bijdragen aan verbetering.', example:'Kopenhagen publiceert alle beleidsdocumenten openbaar en in meerdere talen, en brengt regelmatig voortgangsrapportages uit. Dit maakt externe toetsing vanzelfsprekend en versterkt de interne discipline om doelen ook echt te halen.' },
-      en: { text:'Begin preparing the next generation almost immediately after adoption of the current SUMP. This allows real-time co-writing while implementation is underway: what works, what does not, what needs to change. Ensure that documents are also suitable for external review, including by publishing them in English. Foreign peers and European programmes such as CIVITAS can then contribute substantively to improvement.', example:'Copenhagen publishes all policy documents publicly and in multiple languages, and regularly issues progress reports. This makes external review a matter of course and strengthens internal discipline to actually achieve goals.' }
+  acc:{
+    sump:{
+      nl:{text:'Begin vrijwel direct na de vaststelling van het huidige SUMP met de voorbereiding van de volgende generatie. Zo kan er live meegeschreven worden terwijl de implementatie loopt: wat werkt, wat niet, wat moet anders. Zorg dat documenten ook geschikt zijn voor externe toetsing, onder meer door ze in het Engels te publiceren. Buitenlandse peers en Europese programma\'s zoals CIVITAS kunnen dan inhoudelijk bijdragen aan verbetering.',example:'Kopenhagen publiceert alle beleidsdocumenten openbaar en in meerdere talen, en brengt regelmatig voortgangsrapportages uit. Dit maakt externe toetsing vanzelfsprekend en versterkt de interne discipline om doelen ook echt te halen.'},
+      en:{text:'Begin preparing the next generation almost immediately after adoption of the current SUMP. This allows real-time co-writing while implementation is underway: what works, what does not, what needs to change. Ensure that documents are also suitable for external review, including by publishing them in English. Foreign peers and European programmes such as CIVITAS can then contribute substantively to improvement.',example:'Copenhagen publishes all policy documents publicly and in multiple languages, and regularly issues progress reports. This makes external review a matter of course and strengthens internal discipline to actually achieve goals.'}
     },
-    inst: {
-      nl: { text:'De informele samenwerking uit fase 2 moet nu worden geformaliseerd. Stel samenwerking met regiogemeenten en -organisaties vrijwel verplicht, minimaal op het gebied van gezamenlijke doelstellingen, gedeelde meetmethoden en een gezamenlijk protocol. Ontwikkel regionale programma\'s die aansluiten bij de specifiekere sectorale documenten van afzonderlijke gemeenten — zo ontstaat coherentie zonder uniformiteit te dwingen.', example:'Kopenhagen ontwikkelde in de Greater Copenhagen Authority een regionale governancestructuur waarbij deelnemende gemeenten eigen beleidsruimte houden, maar gezamenlijk meten en rapporteren. Dit model maakt samenwerking over gemeentegrenzen heen structureel mogelijk.' },
-      en: { text:'The informal cooperation from phase 2 must now be formalised. Make cooperation with regional municipalities and organisations near-mandatory, at minimum on joint objectives, shared measurement methods and a common protocol. Develop regional programmes that connect to the more specific sectoral documents of individual municipalities — creating coherence without forcing uniformity.', example:'Copenhagen developed in the Greater Copenhagen Authority a regional governance structure in which participating municipalities retain their own policy space, but measure and report jointly. This model makes cross-municipal cooperation structurally possible.' }
+    inst:{
+      nl:{text:'De informele samenwerking uit fase 2 moet nu worden geformaliseerd. Stel samenwerking met regiogemeenten en -organisaties vrijwel verplicht, minimaal op het gebied van gezamenlijke doelstellingen, gedeelde meetmethoden en een gezamenlijk protocol. Ontwikkel regionale programma\'s die aansluiten bij de specifiekere sectorale documenten van afzonderlijke gemeenten — zo ontstaat coherentie zonder uniformiteit te dwingen.',example:'Kopenhagen ontwikkelde in de Greater Copenhagen Authority een regionale governancestructuur waarbij deelnemende gemeenten eigen beleidsruimte houden, maar gezamenlijk meten en rapporteren. Dit model maakt samenwerking over gemeentegrenzen heen structureel mogelijk.'},
+      en:{text:'The informal cooperation from phase 2 must now be formalised. Make cooperation with regional municipalities and organisations near-mandatory, at minimum on joint objectives, shared measurement methods and a common protocol. Develop regional programmes that connect to the more specific sectoral documents of individual municipalities — creating coherence without forcing uniformity.',example:'Copenhagen developed in the Greater Copenhagen Authority a regional governance structure in which participating municipalities retain their own policy space, but measure and report jointly. This model makes cross-municipal cooperation structurally possible.'}
     },
-    fin: {
-      nl: { text:'Zorg voor meerdere investeringsstromen tegelijk: gemeentelijk budget, EU-fondsen, samenwerking met andere steden in ruil voor expertise, en private partijen. Afhankelijkheid van één bron maakt de implementatie kwetsbaar. Private bedrijven zijn in deze fase vaak bereid te investeren, juist omdat de stad al aantoont dat ze serieus is en resultaten boekt.', example:'Kopenhagen financiert haar mobiliteitsinfrastructuur via een diverse mix van gemeentelijk budget, beperkte EU-bijdragen en structurele samenwerking met private partijen die investeren in ruil voor langetermijnconcessies.' },
-      en: { text:'Ensure multiple investment streams simultaneously: municipal budget, EU funds, cooperation with other cities in exchange for expertise, and private parties. Dependence on one source makes implementation vulnerable. Private companies are often willing to invest at this stage, precisely because the city demonstrates it is serious and delivers results.', example:'Copenhagen finances its mobility infrastructure through a diverse mix of municipal budget, limited EU contributions and structural cooperation with private parties investing in exchange for long-term concessions.' }
+    fin:{
+      nl:{text:'Zorg voor meerdere investeringsstromen tegelijk: gemeentelijk budget, EU-fondsen, samenwerking met andere steden in ruil voor expertise, en private partijen. Afhankelijkheid van één bron maakt de implementatie kwetsbaar. Private bedrijven zijn in deze fase vaak bereid te investeren, juist omdat de stad al aantoont dat ze serieus is en resultaten boekt.',example:'Kopenhagen financiert haar mobiliteitsinfrastructuur via een diverse mix van gemeentelijk budget, beperkte EU-bijdragen en structurele samenwerking met private partijen die investeren in ruil voor langetermijnconcessies.'},
+      en:{text:'Ensure multiple investment streams simultaneously: municipal budget, EU funds, cooperation with other cities in exchange for expertise, and private parties. Dependence on one source makes implementation vulnerable. Private companies are often willing to invest at this stage, precisely because the city demonstrates it is serious and delivers results.',example:'Copenhagen finances its mobility infrastructure through a diverse mix of municipal budget, limited EU contributions and structural cooperation with private parties investing in exchange for long-term concessions.'}
     },
-    pol: {
-      nl: { text:'In de acceleratiefase is er vertrouwen opgebouwd — benut dat. Bijzondere momenten zoals grote evenementen, klimaatakkoorden of verkiezingsuitslagen zijn kansen voor stappenvergrotende beleidswijzigingen die in eerdere fasen niet haalbaar waren. Geef ook ruimte aan experimenteren: niet elk initiatief hoeft te slagen, maar de ruimte om te proberen is zelf al een teken van volwassen mobiliteitsbeleid. Investeer fors in infrastructuur — gedragsverandering volgt infrastructuur op de lange termijn.', example:'Parijs benut politieke momenten bewust: rondom de Olympische Spelen werd een grootscheepse herinrichting van de openbare ruimte doorgevoerd. De stad experimenteert actief met alternatieve vervoersmiddelen — niet alles lukt, maar die experimenteerruimte is een teken van een gezonde politiek-culturele situatie.' },
-      en: { text:'In the acceleration phase trust has been built — use it. Special moments such as major events, climate agreements or election results are opportunities for step-change policy shifts that were not feasible in earlier phases. Also make room for experimentation: not every initiative needs to succeed, but the space to try is itself a sign of mature mobility policy. Invest heavily in infrastructure — behavioural change follows infrastructure in the long run.', example:'Paris deliberately exploits political moments: around the Olympic Games a large-scale redesign of public space was carried out. The city actively experiments with alternative modes of transport — not everything succeeds, but that experimental space is a sign of a healthy political-cultural situation.' }
+    pol:{
+      nl:{text:'In de acceleratiefase is er vertrouwen opgebouwd — benut dat. Bijzondere momenten zoals grote evenementen, klimaatakkoorden of verkiezingsuitslagen zijn kansen voor stappenvergrotende beleidswijzigingen die in eerdere fasen niet haalbaar waren. Geef ook ruimte aan experimenteren: niet elk initiatief hoeft te slagen, maar de ruimte om te proberen is zelf al een teken van volwassen mobiliteitsbeleid. Investeer fors in infrastructuur — gedragsverandering volgt infrastructuur op de lange termijn.',example:'Parijs benut politieke momenten bewust: rondom de Olympische Spelen werd een grootscheepse herinrichting van de openbare ruimte doorgevoerd. De stad experimenteert actief met alternatieve vervoersmiddelen — niet alles lukt, maar die experimenteerruimte is een teken van een gezonde politiek-culturele situatie.'},
+      en:{text:'In the acceleration phase trust has been built — use it. Special moments such as major events, climate agreements or election results are opportunities for step-change policy shifts that were not feasible in earlier phases. Also make room for experimentation: not every initiative needs to succeed, but the space to try is itself a sign of mature mobility policy. Invest heavily in infrastructure — behavioural change follows infrastructure in the long run.',example:'Paris deliberately exploits political moments: around the Olympic Games a large-scale redesign of public space was carried out. The city actively experiments with alternative modes of transport — not everything succeeds, but that experimental space is a sign of a healthy political-cultural situation.'}
     }
   },
-  stab: {
-    sump: {
-      nl: { text:'Het risico is stilstand: het plan is goed, de resultaten zijn er, de urgentie om te verbeteren voelt minder. Blijf het SUMP herzien op basis van nieuwe technologische ontwikkelingen zoals MaaS en autonome voertuigen. Deel kennis actief via Europese netwerken — een stabilisatiestad heeft een verantwoordelijkheid als kenniscentrum voor steden in eerdere fasen, en dat delen dwingt ook intern tot blijven verbeteren.', example:'Kopenhagen herpositioneert haar mobiliteitsbeleid continu: recentelijk door klimaatadaptatie te integreren in het mobiliteitsplan.' },
-      en: { text:'The risk is stagnation: the plan is good, the results are there, the urgency to improve feels less pressing. Keep revising the SUMP based on new technological developments such as MaaS and autonomous vehicles. Share knowledge actively via European networks — a stabilisation city has a responsibility as a knowledge centre for cities in earlier phases, and that sharing also forces internal improvement.', example:'Copenhagen continuously repositions its mobility policy: recently by integrating climate adaptation into the mobility plan.' }
+  stab:{
+    sump:{
+      nl:{text:'Het risico is stilstand: het plan is goed, de resultaten zijn er, de urgentie om te verbeteren voelt minder. Blijf het SUMP herzien op basis van nieuwe technologische ontwikkelingen zoals MaaS en autonome voertuigen. Deel kennis actief via Europese netwerken — een stabilisatiestad heeft een verantwoordelijkheid als kenniscentrum voor steden in eerdere fasen, en dat delen dwingt ook intern tot blijven verbeteren.',example:'Kopenhagen herpositioneert haar mobiliteitsbeleid continu: recentelijk door klimaatadaptatie te integreren in het mobiliteitsplan.'},
+      en:{text:'The risk is stagnation: the plan is good, the results are there, the urgency to improve feels less pressing. Keep revising the SUMP based on new technological developments such as MaaS and autonomous vehicles. Share knowledge actively via European networks — a stabilisation city has a responsibility as a knowledge centre for cities in earlier phases, and that sharing also forces internal improvement.',example:'Copenhagen continuously repositions its mobility policy: recently by integrating climate adaptation into the mobility plan.'}
     },
-    inst: {
-      nl: { text:'De governance is stabiel, maar institutionele verstarring ligt op de loer: structuren die ooit effectief waren worden routineus voortgezet zonder te toetsen of ze nog passen bij nieuwe uitdagingen. Evalueer de governance periodiek en pas aan waar nodig. Een stedelijke regio verandert, en de samenwerkingsstructuren moeten daarin meebewegen.', example:'Kopenhagen breidt haar samenwerking in de Greater Copenhagen Authority regelmatig uit naar nieuwe thema\'s en nieuwe partners, ook grensoverschrijdend met het Zweedse Malmö.' },
-      en: { text:'Governance is stable, but institutional rigidity lurks: structures that were once effective are routinely continued without checking whether they still fit new challenges. Evaluate governance periodically and adapt where necessary. An urban region changes, and cooperation structures must move with it.', example:'Copenhagen regularly extends its cooperation in the Greater Copenhagen Authority to new themes and new partners, including cross-border with the Swedish city of Malmö.' }
+    inst:{
+      nl:{text:'De governance is stabiel, maar institutionele verstarring ligt op de loer: structuren die ooit effectief waren worden routineus voortgezet zonder te toetsen of ze nog passen bij nieuwe uitdagingen. Evalueer de governance periodiek en pas aan waar nodig. Een stedelijke regio verandert, en de samenwerkingsstructuren moeten daarin meebewegen.',example:'Kopenhagen breidt haar samenwerking in de Greater Copenhagen Authority regelmatig uit naar nieuwe thema\'s en nieuwe partners, ook grensoverschrijdend met het Zweedse Malmö.'},
+      en:{text:'Governance is stable, but institutional rigidity lurks: structures that were once effective are routinely continued without checking whether they still fit new challenges. Evaluate governance periodically and adapt where necessary. An urban region changes, and cooperation structures must move with it.',example:'Copenhagen regularly extends its cooperation in the Greater Copenhagen Authority to new themes and new partners, including cross-border with the Swedish city of Malmö.'}
     },
-    fin: {
-      nl: { text:'In een stabilisatiestad dreigt financiële gemakzucht: fondsen lopen door, maar de strategische scherpte neemt af. Toets het investeringsplan regelmatig op effectiviteit en durf te stoppen met wat niet werkt. Blijf private partijen actief betrekken — zij verwachten ambitie, geen beheer.', example:'Kopenhagen heroriënteert haar investeringsstrategie bij elke nieuwe beleidscyclus en maakt expliciet welke investeringen worden afgebouwd en welke worden versterkt.' },
-      en: { text:'In a stabilisation city, financial complacency threatens: funds keep flowing, but strategic sharpness decreases. Regularly assess the investment plan for effectiveness and be willing to stop what does not work. Keep private parties actively involved — they expect ambition, not maintenance.', example:'Copenhagen reorients its investment strategy at every new policy cycle and explicitly states which investments are being phased out and which are being strengthened.' }
+    fin:{
+      nl:{text:'In een stabilisatiestad dreigt financiële gemakzucht: fondsen lopen door, maar de strategische scherpte neemt af. Toets het investeringsplan regelmatig op effectiviteit en durf te stoppen met wat niet werkt. Blijf private partijen actief betrekken — zij verwachten ambitie, geen beheer.',example:'Kopenhagen heroriënteert haar investeringsstrategie bij elke nieuwe beleidscyclus en maakt expliciet welke investeringen worden afgebouwd en welke worden versterkt.'},
+      en:{text:'In a stabilisation city, financial complacency threatens: funds keep flowing, but strategic sharpness decreases. Regularly assess the investment plan for effectiveness and be willing to stop what does not work. Keep private parties actively involved — they expect ambition, not maintenance.',example:'Copenhagen reorients its investment strategy at every new policy cycle and explicitly states which investments are being phased out and which are being strengthened.'}
     },
-    pol: {
-      nl: { text:'De cultuur is veranderd, maar het risico is dat het momentum verloren gaat bij bestuurswisselingen. Zorg voor institutioneel geheugen — in documenten, in organisaties, in brede maatschappelijke coalities die onafhankelijk van het politieke bestuur functioneren. Een mobiliteitsvisie mag niet afhankelijk zijn van één wethouder of één coalitie.', example:'Kopenhagen deelt actief haar kennis op het gebied van duurzame mobiliteit en fungeert vaak als best practice. Wie kennis deelt, moet zelf blijven verbeteren — dat houdt ook intern de ambitie levend.' },
-      en: { text:'Culture has changed, but the risk is that momentum is lost during changes of administration. Ensure institutional memory — in documents, in organisations, in broad social coalitions that function independently of the political administration. A mobility vision must not be dependent on one alderman or one coalition.', example:'Copenhagen actively shares its knowledge of sustainable mobility and frequently serves as a best practice. Those who share knowledge must keep improving themselves — that also keeps ambition alive internally.' }
+    pol:{
+      nl:{text:'De cultuur is veranderd, maar het risico is dat het momentum verloren gaat bij bestuurswisselingen. Zorg voor institutioneel geheugen — in documenten, in organisaties, in brede maatschappelijke coalities die onafhankelijk van het politieke bestuur functioneren. Een mobiliteitsvisie mag niet afhankelijk zijn van één wethouder of één coalitie.',example:'Kopenhagen deelt actief haar kennis op het gebied van duurzame mobiliteit en fungeert vaak als best practice. Wie kennis deelt, moet zelf blijven verbeteren — dat houdt ook intern de ambitie levend.'},
+      en:{text:'Culture has changed, but the risk is that momentum is lost during changes of administration. Ensure institutional memory — in documents, in organisations, in broad social coalitions that function independently of the political administration. A mobility vision must not be dependent on one alderman or one coalition.',example:'Copenhagen actively shares its knowledge of sustainable mobility and frequently serves as a best practice. Those who share knowledge must keep improving themselves — that also keeps ambition alive internally.'}
     }
   }
 };
+
+// ── City input ────────────────────────────────────────────
+function onCityInput() {
+  // live feedback only — no action until confirm
+}
+
+function confirmCity() {
+  const val = document.getElementById('city-input-field').value.trim();
+  cityName = val;
+  const disp = document.getElementById('city-nav-display');
+  if(cityName) {
+    disp.textContent = '📍 ' + cityName;
+    disp.style.display = 'block';
+  } else {
+    disp.style.display = 'none';
+  }
+}
 
 // ── Core functions ────────────────────────────────────────
 function score(qNum, val, btn) {
   const q = document.getElementById('q'+qNum);
   const btns = q.querySelectorAll('.q-btn');
   const wasSame = scores[qNum] === val;
-
   btns.forEach(b => b.className = 'q-btn');
-
   if(wasSame) {
     delete scores[qNum];
     q.classList.remove('answered');
@@ -629,19 +852,116 @@ function getPhase(total) {
   return {label:t('phase_stab'), cls:'stab', key:'stab'};
 }
 
-function getDimName(dim) {
-  return t('dim_'+dim);
+function getDimName(dim) { return t('dim_'+dim); }
+function getBadgeLabel(b) { return t('badge_'+b); }
+
+// ── Phase theme ───────────────────────────────────────────
+function applyPhaseTheme(phaseKey) {
+  document.body.className = document.body.className.replace(/phase-\S+/g,'').trim();
+  if(phaseKey) document.body.classList.add('phase-'+phaseKey);
 }
 
-function getBadgeLabel(b) {
-  return t('badge_'+b);
+// ── Radar chart ───────────────────────────────────────────
+function drawRadar() {
+  const canvas = document.getElementById('radarCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2 + 10;
+  const R = Math.min(W,H) * 0.36;
+  const dims = ['sump','inst','fin','pol'];
+  const maxes = {sump:9, inst:9, fin:9, pol:12};
+  const labels = {
+    sump: t('dim_sump'), inst: t('dim_inst'),
+    fin: t('dim_fin'), pol: t('dim_pol')
+  };
+  const angles = dims.map((_,i) => -Math.PI/2 + (2*Math.PI/dims.length)*i);
+
+  // Resolve CSS var color
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2d6a2d';
+  const accentLight = getComputedStyle(document.documentElement).getPropertyValue('--accent-light').trim() || '#4a9a4a';
+
+  // Draw grid rings (5 levels)
+  for(let level=1; level<=5; level++) {
+    const r = R * level/5;
+    ctx.beginPath();
+    angles.forEach((a,i) => {
+      const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw axes
+  angles.forEach(a => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R*Math.cos(a), cy + R*Math.sin(a));
+    ctx.strokeStyle = 'rgba(0,0,0,.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Draw data polygon
+  const dataPoints = dims.map((d,i) => {
+    const s = getDimScore(d);
+    const maxS = maxes[d];
+    const r = R * (s/maxS);
+    return { x: cx + r*Math.cos(angles[i]), y: cy + r*Math.sin(angles[i]) };
+  });
+
+  ctx.beginPath();
+  dataPoints.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.closePath();
+  ctx.fillStyle = accentColor + '33';
+  ctx.fill();
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Dots
+  dataPoints.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = accentColor;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // Labels
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'center';
+  dims.forEach((d,i) => {
+    const a = angles[i];
+    const labelR = R + 36;
+    const lx = cx + labelR*Math.cos(a);
+    const ly = cy + labelR*Math.sin(a);
+    const s = getDimScore(d);
+    const maxS = maxes[d];
+    const short = {sump:'SUMP', inst:'Inst.', fin:'Fin.', pol:'Pol.-cult.'};
+    ctx.fillStyle = '#444';
+    ctx.font = '600 11px sans-serif';
+    ctx.fillText(short[d], lx, ly - 4);
+    ctx.font = '500 11px sans-serif';
+    ctx.fillStyle = accentColor;
+    ctx.fillText(s+'/'+maxS, lx, ly + 10);
+  });
 }
 
 function showS1Result() {
   const total = Object.values(scores).reduce((a,b)=>a+b,0);
   const phase = getPhase(total);
-  const phaseDescs = { pre:t('phase_desc_pre'), takeoff:t('phase_desc_takeoff'), acc:t('phase_desc_acc'), stab:t('phase_desc_stab') };
+  applyPhaseTheme(phase.key);
 
+  const phaseDescs = { pre:t('phase_desc_pre'), takeoff:t('phase_desc_takeoff'), acc:t('phase_desc_acc'), stab:t('phase_desc_stab') };
   document.getElementById('phase-result').innerHTML = `
     <div class="result-phase ${phase.cls}">
       <div class="phase-title">${phase.label}</div>
@@ -662,6 +982,9 @@ function showS1Result() {
   document.getElementById('dim-results').innerHTML = html;
   document.getElementById('s1-result').style.display = 'block';
   document.getElementById('s1-result').scrollIntoView({behavior:'smooth', block:'start'});
+
+  // Radar
+  requestAnimationFrame(() => drawRadar());
 
   const weakDims = ['sump','inst','fin','pol'].filter(d => getDimBadge(d) !== 'sterk');
   const btn = document.getElementById('btn-to-s2');
@@ -685,25 +1008,19 @@ function buildS2() {
     buildS2Result();
     return;
   }
-
   const dimLbls = { sump:t('dim_lbl_sump'), inst:t('dim_lbl_inst'), fin:t('dim_lbl_fin'), pol:t('dim_lbl_pol') };
   const lang = currentLang;
-
   let html = '';
   for(const dim of weakDims) {
     const qs = s2questions[dim][lang];
-    html += `<div style="margin-bottom:2rem">
-      <div class="dim-label">${dimLbls[dim]}</div>`;
+    html += `<div style="margin-bottom:2rem"><div class="dim-label">${dimLbls[dim]}</div>`;
     qs.forEach((qObj, i) => {
       const key = dim+'_'+i;
-      html += `<div class="s2-question">
-        <div class="s2-q-text">${qObj.q}</div>
-        <div class="s2-options">`;
+      html += `<div class="s2-question"><div class="s2-q-text">${qObj.q}</div><div class="s2-options">`;
       qObj.opts.forEach((opt, j) => {
         const selCls = s2scores[key] === j+1 ? ' sel' : '';
         html += `<button class="s2-btn${selCls}" id="s2btn_${key}_${j}" onclick="s2score('${key}',${j+1},this)">
-          <span class="s2-opt-num">${j+1}</span>${opt}
-        </button>`;
+          <span class="s2-opt-num">${j+1}</span>${opt}</button>`;
       });
       html += `</div></div>`;
     });
@@ -750,7 +1067,7 @@ function buildS3() {
   const total = Object.values(scores).reduce((a,b)=>a+b,0);
   const phase = getPhase(total);
   const lang = currentLang;
-
+  const phaseDescs = { pre:t('phase_desc_pre'), takeoff:t('phase_desc_takeoff'), acc:t('phase_desc_acc'), stab:t('phase_desc_stab') };
   const weakDims = ['sump','inst','fin','pol'].filter(d => getDimBadge(d) !== 'sterk');
 
   if(weakDims.length === 0) {
@@ -758,20 +1075,58 @@ function buildS3() {
     return;
   }
 
-  let html = `<div class="advice-phase">
-    <div class="advice-phase-header"><h2>${phase.label}</h2></div>`;
+  const dimMaxes = {sump:9, inst:9, fin:9, pol:12};
 
+  // Phase header
+  let html = `<div class="s3-phase-header">
+    <h2>${phase.label}</h2>
+    <p>${phaseDescs[phase.key]}</p>
+  </div>`;
+
+  // Tabs
+  html += `<div class="advice-tabs">`;
   weakDims.forEach((dim, i) => {
-    const a = advice[phase.key][dim][lang];
-    html += `<div class="advice-block">
-      <div class="advice-dim">${getDimName(dim)}</div>
-      <div class="advice-text">${a.text}</div>
-      <div class="advice-example"><em>${a.example}</em></div>
+    const badge = getDimBadge(dim);
+    html += `<div class="advice-tab${i===0?' active':''}" onclick="switchAdviceTab('${dim}')">
+      <span class="tab-badge ${badge}"></span>${getDimName(dim)}
     </div>`;
   });
+  html += `</div>`;
 
-  html += '</div>';
+  // Panels
+  html += `<div class="advice-panels">`;
+  weakDims.forEach((dim, i) => {
+    const a = advice[phase.key][dim][lang];
+    const s = getDimScore(dim);
+    const max = dimMaxes[dim];
+    const badge = getDimBadge(dim);
+    html += `<div class="advice-panel${i===0?' active':''}" id="panel-${dim}">
+      <div class="advice-dim">${getDimName(dim)}</div>
+      <div class="advice-panel-score">
+        <span class="score-num">${s}</span>
+        <span class="score-den">/ ${max}</span>
+        <span class="badge badge-${badge}">${getBadgeLabel(badge)}</span>
+      </div>
+      <div class="advice-text">${a.text}</div>
+      <div class="advice-example">${a.example}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
   document.getElementById('s3-content').innerHTML = html;
+}
+
+function switchAdviceTab(dim) {
+  document.querySelectorAll('.advice-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.advice-panel').forEach(p => p.classList.remove('active'));
+  const tabs = document.querySelectorAll('.advice-tab');
+  tabs.forEach(tab => { if(tab.textContent.trim().replace(/^\W+/,'').startsWith(getDimName(dim).substring(0,6))) tab.classList.add('active'); });
+  // Simpler: match by panel id
+  document.querySelectorAll('.advice-tab').forEach(tab => {
+    if(tab.getAttribute('onclick') === `switchAdviceTab('${dim}')`) tab.classList.add('active');
+  });
+  const panel = document.getElementById('panel-'+dim);
+  if(panel) panel.classList.add('active');
 }
 
 function goSection(n) {
@@ -785,6 +1140,10 @@ function goSection(n) {
 function resetAll() {
   for(const k in scores) delete scores[k];
   for(const k in s2scores) delete s2scores[k];
+  cityName = '';
+  document.getElementById('city-input-field').value = '';
+  document.getElementById('city-nav-display').style.display = 'none';
+  applyPhaseTheme(null);
   updateBar();
   document.getElementById('s1-result').style.display = 'none';
   document.getElementById('s2-result').style.display = 'none';
@@ -813,16 +1172,20 @@ function applyLang() {
     const val = t(key);
     if(val) el.innerHTML = val;
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const val = t(key);
+    if(val) el.placeholder = val;
+  });
 }
 
-// ── Build step 1 questions dynamically ───────────────────
+// ── Build step 1 questions ────────────────────────────────
 function buildS1Questions() {
   const lang = currentLang;
   const dimOrder = ['sump','inst','fin','pol'];
   const dimLbls = { sump:t('dim_lbl_sump'), inst:t('dim_lbl_inst'), fin:t('dim_lbl_fin'), pol:t('dim_lbl_pol') };
   let qNum = 0;
   let html = '';
-
   for(const dim of dimOrder) {
     html += `<div class="dim-section"><div class="dim-label">${dimLbls[dim]}</div>`;
     for(const qData of questions[dim]) {
@@ -844,6 +1207,195 @@ function buildS1Questions() {
     html += '</div>';
   }
   document.getElementById('s1-questions').innerHTML = html;
+}
+
+// ── PDF generation ────────────────────────────────────────
+function downloadPDF() {
+  if(typeof window.jspdf === 'undefined') {
+    alert('PDF-bibliotheek laadt nog, probeer opnieuw.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const total = Object.values(scores).reduce((a,b)=>a+b,0);
+  const phase = getPhase(total);
+  const lang = currentLang;
+  const weakDims = ['sump','inst','fin','pol'].filter(d => getDimBadge(d) !== 'sterk');
+
+  // Phase colors for PDF
+  const phaseColors = {
+    pre: [198, 40, 40], takeoff: [230, 81, 0], acc: [45, 106, 45], stab: [27, 94, 32]
+  };
+  const pc = phaseColors[phase.key];
+
+  const margin = 18;
+  const pageW = 210;
+  let y = margin;
+
+  // Header bar
+  doc.setFillColor(...pc);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('SUMP Handelingskader', margin, 11);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  const subtitle = lang==='nl' ? 'Diagnose & Advies' : 'Diagnosis & Advice';
+  doc.text(subtitle, margin, 19);
+  const dateStr = new Date().toLocaleDateString(lang==='nl'?'nl-NL':'en-GB', {year:'numeric',month:'long',day:'numeric'});
+  doc.text(dateStr, pageW - margin, 19, {align:'right'});
+  y = 36;
+
+  // City name
+  doc.setTextColor(30,30,30);
+  if(cityName) {
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(18);
+    doc.text(cityName, margin, y);
+    y += 8;
+  }
+
+  // Phase badge
+  doc.setFillColor(...pc.map(c=>Math.min(255,c+80)));
+  doc.roundedRect(margin, y, 80, 12, 3, 3, 'F');
+  doc.setTextColor(...pc);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text(phase.label, margin+4, y+8);
+
+  doc.setTextColor(80,80,80);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9.5);
+  const phaseDescs = { pre:t('phase_desc_pre'), takeoff:t('phase_desc_takeoff'), acc:t('phase_desc_acc'), stab:t('phase_desc_stab') };
+  doc.text(phaseDescs[phase.key], margin+85, y+8);
+  y += 18;
+
+  // Scores table
+  doc.setDrawColor(220,220,220);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageW-margin, y);
+  y += 5;
+
+  const dimMaxes = {sump:9, inst:9, fin:9, pol:12};
+  const dimNames = {sump:t('dim_sump'), inst:t('dim_inst'), fin:t('dim_fin'), pol:t('dim_pol')};
+  const badgeColors = { zwak:[198,40,40], matig:[230,81,0], sterk:[45,106,45] };
+
+  for(const dim of ['sump','inst','fin','pol']) {
+    const s = getDimScore(dim);
+    const max = dimMaxes[dim];
+    const badge = getDimBadge(dim);
+    const bc = badgeColors[badge];
+
+    doc.setTextColor(30,30,30);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text(dimNames[dim], margin, y);
+
+    // Score
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...pc);
+    doc.text(s+'/'+max, 128, y, {align:'right'});
+
+    // Badge pill
+    doc.setFillColor(...bc.map(c=>Math.min(255,c+100)));
+    doc.roundedRect(133, y-5, 28, 7, 2, 2, 'F');
+    doc.setTextColor(...bc);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8.5);
+    doc.text(getBadgeLabel(badge), 147, y, {align:'center'});
+
+    y += 8;
+  }
+
+  // Total score line
+  doc.setDrawColor(220,220,220);
+  doc.line(margin, y, pageW-margin, y);
+  y += 5;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(30,30,30);
+  doc.text((lang==='nl'?'Totaalscore':'Total score')+': '+total+' / 39', margin, y);
+  y += 12;
+
+  // Radar chart
+  const radarCanvas = document.getElementById('radarCanvas');
+  if(radarCanvas) {
+    try {
+      const imgData = radarCanvas.toDataURL('image/png');
+      const radarSize = 68;
+      const radarX = (pageW - radarSize) / 2;
+      doc.addImage(imgData, 'PNG', radarX, y, radarSize, radarSize * (300/340));
+      y += radarSize * (300/340) + 10;
+    } catch(e) {}
+  }
+
+  // Advice section
+  if(weakDims.length > 0) {
+    // Section header
+    doc.setFillColor(...pc);
+    doc.rect(margin, y, pageW-2*margin, 8, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9.5);
+    const advHeader = lang==='nl' ? 'Adviezen per dimensie' : 'Recommendations per dimension';
+    doc.text(advHeader, margin+3, y+5.5);
+    y += 13;
+
+    for(const dim of weakDims) {
+      const a = advice[phase.key][dim][lang];
+
+      // Check page break
+      if(y > 240) { doc.addPage(); y = margin; }
+
+      doc.setTextColor(...pc);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(9.5);
+      doc.text(dimNames[dim].toUpperCase(), margin, y);
+      y += 5;
+
+      doc.setTextColor(40,40,40);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(a.text, pageW-2*margin);
+      const lineH = 4.5;
+      if(y + lines.length * lineH > 272) { doc.addPage(); y = margin; }
+      doc.text(lines, margin, y);
+      y += lines.length * lineH + 3;
+
+      // Example
+      doc.setTextColor(100,100,100);
+      doc.setFontSize(8.5);
+      const exLines = doc.splitTextToSize('> ' + a.example, pageW-2*margin-6);
+      const exLineH = 4;
+      if(y + exLines.length * exLineH + 4 > 275) { doc.addPage(); y = margin; }
+      doc.text(exLines, margin+3, y);
+      y += exLines.length * exLineH + 10;
+
+      if(y > 265 && weakDims.indexOf(dim) < weakDims.length-1) { doc.addPage(); y = margin; }
+    }
+  } else {
+    doc.setTextColor(45,106,45);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(10);
+    doc.text(t('all_strong_s3'), margin, y, {maxWidth: pageW-2*margin});
+  }
+
+  // Footer
+  const footerY = 285;
+  doc.setDrawColor(220,220,220);
+  doc.line(margin, footerY, pageW-margin, footerY);
+  doc.setTextColor(160,160,160);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.text('github.com/Simonwrasch/SUMP-handelingskader', margin, footerY+5);
+  doc.text('Simon Rasch — Witteveen+Bos / Saxion', pageW-margin, footerY+5, {align:'right'});
+
+  const filename = cityName
+    ? 'SUMP-diagnose-'+cityName.replace(/\s+/g,'-')+'.pdf'
+    : 'SUMP-diagnose.pdf';
+  doc.save(filename);
 }
 
 // ── Init ─────────────────────────────────────────────────
