@@ -147,6 +147,46 @@
     font-size: 14px; color: #444; transition: background .4s;
   }
 
+  /* ── HERO (full-width) ── */
+  .intro-hero {
+    background: #1a3d2b; color: #fff;
+    border-radius: 14px; padding: 2.75rem 3rem; margin-bottom: 2rem;
+  }
+  .hero-meta-label {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: .09em; color: rgba(255,255,255,.42); margin-bottom: .9rem;
+  }
+  .intro-hero h1 {
+    font-size: 28px; font-weight: 700; margin-bottom: .85rem; line-height: 1.25; color: #fff;
+  }
+  .intro-hero .hero-sub {
+    font-size: 16px; font-weight: 500; color: rgba(255,255,255,.85);
+    line-height: 1.65; max-width: 680px;
+  }
+
+  /* ── Section pill labels ── */
+  .section-pill {
+    display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--accent); background: var(--accent-bg);
+    border: 1px solid var(--accent-border); border-radius: 20px;
+    padding: 3px 12px; margin-bottom: 1rem;
+  }
+
+  /* ── Voor wie grid ── */
+  .for-who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: .25rem; }
+  .for-who-col {}
+  .for-who-col-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--accent); margin-bottom: .5rem;
+  }
+  .for-who-col-label.secondary { color: #999; }
+  .for-who-col p { font-size: 14px; color: #555; line-height: 1.6; }
+
+  @media(max-width:600px) {
+    .intro-hero { padding: 2rem 1.5rem; }
+    .for-who-grid { grid-template-columns: 1fr; }
+  }
+
   /* ── BUTTONS ── */
   .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; border: none; transition: all .2s; }
   .btn-primary { background: var(--accent); color: #fff; }
@@ -345,83 +385,40 @@
 
 <!-- ── INLEIDING ── -->
 <section id="s0" class="visible">
+
+  <!-- Hero -->
   <div class="intro-hero">
-    <h1 data-i18n="hero_title">Contextgevoelig Handelingskader voor SUMP-implementatie</h1>
-    <p data-i18n="hero_sub">Een instrument voor stedelijke knooppunten en adviesbureaus om de positie in de mobiliteitstransitie te bepalen en gericht actie te ondernemen.</p>
-    <div class="intro-meta">
-      <span class="intro-tag" data-i18n="tag1">4 dimensies</span>
-      <span class="intro-tag" data-i18n="tag2">3 stappen</span>
-      <span class="intro-tag" data-i18n="tag3">Gebaseerd op casusonderzoek</span>
-    </div>
+    <div class="hero-meta-label" data-i18n="hero_meta_label">Afstudeeronderzoek · Witteveen+Bos 2026</div>
+    <h1 data-i18n="hero_title">Handelingskader voor SUMP-implementatie</h1>
+    <p class="hero-sub" data-i18n="hero_sub">Bepaal in welke fase van de mobiliteitstransitie uw stad zich bevindt en ontvang concrete, fase-specifieke adviezen om de implementatiekloof te dichten.</p>
   </div>
 
-  <!-- City input + EU map -->
-  <div class="city-input-wrap">
-    <h3 data-i18n="city_input_title">Voor welke stad gebruikt u dit kader?</h3>
-    <div class="city-row">
-      <input class="city-input" id="city-input-field" type="text"
-        data-i18n-placeholder="city_placeholder"
-        placeholder="Naam van de stad (optioneel)"
-        oninput="onCityInput()" onkeydown="if(event.key==='Enter')confirmCity()">
-      <button class="city-confirm" onclick="confirmCity()" data-i18n="city_confirm_btn">Bevestigen</button>
-    </div>
-    <div class="map-container" id="map-container">
-      <!-- EU Map SVG — simplified equirectangular projection, viewBox 0 0 520 390 -->
-      <svg id="eu-map" viewBox="0 0 520 390" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="mapGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e8f4fd"/>
-            <stop offset="100%" stop-color="#d0e8f8"/>
-          </linearGradient>
-        </defs>
-        <rect width="520" height="390" fill="#ddeeff" rx="10"/>
-        <!-- Europe landmass (simplified) -->
-        <path d="
-          M 55,355 L 55,310 L 72,300 L 80,290 L 85,275 L 78,265 L 90,255 L 100,242
-          L 95,232 L 115,215 L 132,208 L 118,198 L 125,188 L 148,182 L 162,170
-          L 168,155 L 160,145 L 175,135 L 188,120 L 195,108 L 182,98 L 180,85
-          L 188,72 L 202,58 L 220,48 L 245,40 L 268,36 L 285,38 L 295,28 L 310,25
-          L 328,30 L 345,38 L 355,52 L 370,48 L 385,55 L 400,65 L 410,80
-          L 420,95 L 415,110 L 425,125 L 435,140 L 428,158 L 440,170
-          L 450,185 L 455,200 L 448,215 L 460,230 L 465,248 L 455,262
-          L 462,278 L 458,295 L 445,308 L 430,318 L 418,330 L 405,345
-          L 388,355 L 370,360 L 345,355 L 325,365 L 305,372 L 285,368
-          L 268,355 L 248,360 L 230,370 L 210,375 L 188,368 L 168,360
-          L 148,368 L 128,375 L 108,368 L 88,362 L 70,358 Z
-        " fill="url(#mapGrad)" stroke="#aac8e0" stroke-width="1.2"/>
-
-        <!-- Scandinavia + UK extras -->
-        <path d="M 220,48 L 205,32 L 195,18 L 200,8 L 215,5 L 228,12 L 235,25 L 228,38 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-        <path d="M 245,40 L 255,30 L 262,18 L 270,10 L 280,8 L 292,16 L 295,28 L 285,38 L 268,36 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-        <path d="M 130,165 L 122,148 L 115,132 L 118,118 L 130,112 L 142,118 L 148,132 L 145,148 L 138,162 Z"
-              fill="#e0eef8" stroke="#aac8e0" stroke-width="1"/>
-
-        <!-- User city marker (hidden by default) -->
-        <g id="marker-user" style="display:none">
-          <circle id="user-dot" cx="0" cy="0" r="8" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/>
-          <text id="user-label" x="0" y="0" font-size="12" fill="var(--accent)" font-weight="700" font-family="sans-serif"></text>
-        </g>
-      </svg>
-    </div>
-  </div>
-
+  <!-- Over dit kader -->
   <div class="info-card">
-    <h2 data-i18n="about_title">Over dit kader</h2>
-    <p data-i18n="about_p1">Dit handelingskader is ontwikkeld als eindproduct van een afstudeeronderzoek naar de implementatie van Sustainable Urban Mobility Plans (SUMPs) in Europese stedelijke knooppunten. Het kader is gebaseerd op vergelijkend casusonderzoek naar vier Europese steden — Napels, Brașov, Parijs en Kopenhagen — die zich elk in een andere fase van de mobiliteitstransitie bevinden.</p>
-    <p data-i18n="about_p2">Door deze steden te analyseren op vier dimensies en te plaatsen binnen het DRIFT-transitiemodel, zijn patronen zichtbaar geworden die verklaren waarom sommige steden sneller vorderen dan andere. Dit kader vertaalt die inzichten naar concrete, bruikbare adviezen.</p>
+    <span class="section-pill" data-i18n="about_title">Over dit kader</span>
+    <p data-i18n="about_p1">Dit instrument is ontwikkeld op basis van vergelijkend onderzoek naar vier Europese steden — Napels, Brașov, Parijs en Kopenhagen — elk vertegenwoordigt een andere fase in de mobiliteitstransitie. Het kader koppelt adviezen aan de transitiefase én de dimensies waarin een stad tekortschiet. Er bestaat geen universeel recept: context bepaalt wat werkt.</p>
+    <p style="margin-top:.6rem" data-i18n="about_p2">Door deze steden te analyseren op vier dimensies en te plaatsen binnen het DRIFT-transitiemodel, zijn patronen zichtbaar geworden die verklaren waarom sommige steden sneller vorderen dan andere. Dit kader vertaalt die inzichten naar concrete, bruikbare adviezen.</p>
   </div>
 
+  <!-- Voor wie -->
   <div class="info-card">
-    <h2 data-i18n="for_who_title">Voor wie?</h2>
-    <p data-i18n="for_who_p">Het kader is primair bedoeld voor beleidsmedewerkers, mobiliteitsplanners en bestuurders werkzaam bij stedelijke knooppunten die vallen onder de Europese SUMP-verplichting. Daarnaast is het bruikbaar voor adviesbureaus die steden begeleiden bij de opstelling of implementatie van een SUMP.</p>
+    <span class="section-pill" data-i18n="for_who_title">Voor wie?</span>
+    <div class="for-who-grid">
+      <div class="for-who-col">
+        <div class="for-who-col-label" data-i18n="for_who_primary_lbl">Primair</div>
+        <p data-i18n="for_who_primary">Beleidsmedewerkers, mobiliteitsplanners en bestuurders bij stedelijke knooppunten onder de Europese SUMP-verplichting.</p>
+      </div>
+      <div class="for-who-col">
+        <div class="for-who-col-label secondary" data-i18n="for_who_secondary_lbl">Aanvullend</div>
+        <p data-i18n="for_who_secondary">Adviesbureaus die steden begeleiden bij de opstelling of implementatie van een SUMP.</p>
+      </div>
+    </div>
   </div>
 
   <div class="info-card">
     <h2 data-i18n="how_title">Hoe werkt het?</h2>
     <p data-i18n="how_p1">Het kader is bewust contextgevoelig opgezet — er bestaat geen universeel recept voor succesvolle SUMP-implementatie. Het kader koppelt adviezen aan de transitiefase én de specifieke dimensies waarin een stad tekortschiet.</p>
-    <p style="margin-top:.75rem; font-size:14px; color:#777;" data-i18n="how_p2">Let op: als self-assessment instrument is het moeilijk om volledig onafhankelijk vast te stellen waar en waarom iets niet lukt. Gekozen is voor gesloten vragen zodat scores berekend en adviezen systematisch gekoppeld kunnen worden. Het kader geeft een gefundeerde richting, geen definitieve diagnose.</p>
+    <p style="margin-top:.75rem; font-size:14px; color:#777;" data-i18n="how_p2">Let op: als zelfbeoordelingsinstrument is het moeilijk om volledig onafhankelijk vast te stellen waar en waarom iets niet lukt. Gekozen is voor gesloten vragen zodat scores berekend en adviezen systematisch gekoppeld kunnen worden. Het kader geeft een gefundeerde richting, geen definitieve diagnose.</p>
   </div>
 
   <div class="steps-overview">
@@ -453,6 +450,17 @@
 <section id="s1">
   <h2 class="section-title" data-i18n="s1_title">Stap 1 — Scorecard</h2>
   <p class="section-sub" data-i18n="s1_sub">Beantwoord alle 13 stellingen met <strong>Nee</strong>, <strong>Deels</strong> of <strong>Ja</strong>. Bij elke stelling staat een korte toelichting waarom deze relevant is.</p>
+
+  <div class="city-input-wrap">
+    <h3 data-i18n="city_input_title">Voor welke stad gebruikt u dit kader?</h3>
+    <div class="city-row">
+      <input class="city-input" id="city-input-field" type="text"
+        data-i18n-placeholder="city_placeholder"
+        placeholder="Naam van de stad (optioneel)"
+        oninput="onCityInput()" onkeydown="if(event.key==='Enter')confirmCity()">
+      <button class="city-confirm" onclick="confirmCity()" data-i18n="city_confirm_btn">Bevestigen</button>
+    </div>
+  </div>
 
   <div class="info-card" style="margin-bottom:1.5rem">
     <h2 data-i18n="scoring_title">Hoe werkt de scoring?</h2>
@@ -543,8 +551,14 @@ const tr = {
   nl: {
     nav_intro:'Inleiding', nav_s1:'Stap 1', nav_s2:'Stap 2', nav_s3:'Stap 3',
     btn_reset:'↺ Opnieuw',
+    hero_meta_label:'Afstudeeronderzoek · Witteveen+Bos 2026',
     hero_title:'Handelingskader voor SUMP-implementatie',
-    hero_sub:'Een instrument voor beleidsmedewerkers, mobiliteitsplanners en bestuurders bij stedelijke knooppunten om de positie in de mobiliteitstransitie te bepalen en gericht actie te ondernemen. Tevens bruikbaar voor adviesbureaus die steden begeleiden.',
+    hero_sub:'Bepaal in welke fase van de mobiliteitstransitie uw stad zich bevindt en ontvang concrete, fase-specifieke adviezen om de implementatiekloof te dichten.',
+    about_p1:'Dit instrument is ontwikkeld op basis van vergelijkend onderzoek naar vier Europese steden — Napels, Brașov, Parijs en Kopenhagen — elk vertegenwoordigt een andere fase in de mobiliteitstransitie. Het kader koppelt adviezen aan de transitiefase én de dimensies waarin een stad tekortschiet. Er bestaat geen universeel recept: context bepaalt wat werkt.',
+    for_who_primary_lbl:'Primair',
+    for_who_primary:'Beleidsmedewerkers, mobiliteitsplanners en bestuurders bij stedelijke knooppunten onder de Europese SUMP-verplichting.',
+    for_who_secondary_lbl:'Aanvullend',
+    for_who_secondary:'Adviesbureaus die steden begeleiden bij de opstelling of implementatie van een SUMP.',
     tag1:'4 dimensies', tag2:'3 stappen', tag3:'Gebaseerd op casusonderzoek',
     city_input_title:'Voor welke stad gebruikt u dit kader?',
     city_placeholder:'Naam van de stad (optioneel)',
@@ -599,8 +613,14 @@ const tr = {
   en: {
     nav_intro:'Introduction', nav_s1:'Step 1', nav_s2:'Step 2', nav_s3:'Step 3',
     btn_reset:'↺ Reset',
+    hero_meta_label:'Graduation research · Witteveen+Bos 2026',
     hero_title:'Action Framework for SUMP Implementation',
-    hero_sub:'A tool for policy officers, mobility planners and administrators at urban nodes to determine their position in the mobility transition and take targeted action. Also useful for consultancies supporting cities.',
+    hero_sub:'Determine which phase of the mobility transition your city is in and receive concrete, phase-specific advice to close the implementation gap.',
+    about_p1:'This instrument was developed based on comparative research into four European cities — Naples, Brașov, Paris and Copenhagen — each representing a different phase of the mobility transition. The framework links advice to the transition phase and the dimensions where a city falls short. There is no universal recipe: context determines what works.',
+    for_who_primary_lbl:'Primary',
+    for_who_primary:'Policy officers, mobility planners and administrators at urban nodes under the European SUMP obligation.',
+    for_who_secondary_lbl:'Additional',
+    for_who_secondary:'Consultancies supporting cities in drafting or implementing a SUMP.',
     tag1:'4 dimensions', tag2:'3 steps', tag3:'Based on case study research',
     city_input_title:'For which city are you using this framework?',
     city_placeholder:'City name (optional)',
@@ -1275,8 +1295,10 @@ function downloadPDF() {
   doc.setFont('helvetica','normal');
   doc.setFontSize(9.5);
   const phaseDescs = { pre:t('phase_desc_pre'), takeoff:t('phase_desc_takeoff'), acc:t('phase_desc_acc'), stab:t('phase_desc_stab') };
-  doc.text(phaseDescs[phase.key], margin+85, y+8);
-  y += 18;
+  const pdDescMaxW = pageW - 2*margin - 87;
+  const pdDescLines = doc.splitTextToSize(phaseDescs[phase.key], pdDescMaxW);
+  doc.text(pdDescLines, margin+87, y+8);
+  y += Math.max(18, pdDescLines.length * 4.5 + 8);
 
   // Scores table
   doc.setDrawColor(220,220,220);
